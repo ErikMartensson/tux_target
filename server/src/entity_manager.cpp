@@ -178,12 +178,12 @@ void CEntityManager::reset()
 			if((*it)->type() == CEntity::Client)
 			{
 				CClient *c = (CClient *)(*it);
-				string name = toString("ping_state_%"NL_I64"u_%s_%s.csv", current, CLevelManager::getInstance().levelFilename().c_str(), c->name().c_str());
+				string name = toString("ping_state_%" NL_I64 "u_%s_%s.csv", current, CLevelManager::getInstance().levelFilename().c_str(), c->name().c_str());
 				FILE *fp = fopen(name.c_str(), "wb");
 				if(fp)
 				{
 					for(uint i = 0; i < c->StatPing.size(); i++)
-						fprintf(fp, "%"NL_I64"u;%d\n", c->StatPing[i].first, c->StatPing[i].second);
+						fprintf(fp, "%" NL_I64 "u;%d\n", c->StatPing[i].first, c->StatPing[i].second);
 				}
 				fclose(fp);
 			}

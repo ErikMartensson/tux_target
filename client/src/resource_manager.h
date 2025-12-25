@@ -82,7 +82,7 @@ private:
 	std::string			ReceivedFilename;
 	volatile bool		Received;
 	volatile bool		CRCReceived;
-	CHashKey			ReceivedHashKey;
+	NLMISC::CHashKey	ReceivedHashKey;
 	
 	std::string			CacheDirectory;
 };

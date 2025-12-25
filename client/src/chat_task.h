@@ -50,11 +50,12 @@ public:
 
 	void	addLine(const std::string &text);
 	void	addToInput(const std::string &text);
-		
+
 private:
 	int chatLineCount;
 	bool logChat;
 	FILE *fp;
+	bool chatActive;
 };
 
 #endif

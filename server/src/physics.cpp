@@ -62,7 +62,7 @@ static PhysicsThread *physicThread = 0;
 TTime syncStartPhyTime = CTime::getLocalTime();
 SyncPhyTime syncPhyTime("syncPhyTime");
 
-IThread *thread = 0;
+IThread *physicsThread = 0;
 
 dWorldID		World = 0;
 
@@ -580,10 +580,10 @@ void initPhysics()
 
 void releasePhysics()
 {
-	if(thread)
+	if(physicsThread)
 	{
-		thread->terminate();
-		delete thread;
+		physicsThread->terminate();
+		delete physicsThread;
 		if(physicThread)
 			delete physicThread;
 	}

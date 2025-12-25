@@ -1,0 +1,74 @@
+# Build directories
+build/
+bin/
+lib/
+
+# AI/Assistant directories
+.claude/
+.roo/
+.cursor/
+.aider*
+.copilot/
+
+# IDE directories
+.vscode/
+.idea/
+*.code-workspace
+
+# Source archives (using newer version)
+mtp-target-src.19.tar.bz2
+mtp-target-src/
+
+# Session/continuation files (AI-specific)
+CONTINUATION_PROMPT.md
+
+# Compiled binaries
+*.exe
+*.dll
+*.so
+*.dylib
+*.lib
+*.a
+
+# Compiled object files
+*.o
+*.obj
+*.slo
+*.lo
+
+# CMake generated files
+CMakeCache.txt
+CMakeFiles/
+cmake_install.cmake
+*.cmake
+!CMakeLists.txt
+!CMakeModules/*.cmake
+
+# Visual Studio files
+.vs/
+*.user
+*.suo
+*.ncb
+*.aps
+*.pdb
+*.ilk
+*.exp
+
+# Logs
+*.log
+log.txt
+
+# Database files (login service)
+login-service-deno/*.db
+login-service-deno/*.db-journal
+
+# Temporary files
+*.tmp
+*.temp
+*.swp
+*~
+.DS_Store
+Thumbs.db
+
+# Config files with user credentials
+*_user.cfg

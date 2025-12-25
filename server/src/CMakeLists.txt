@@ -8,6 +8,7 @@ INCLUDE_DIRECTORIES(
 		${NEL_INCLUDE_DIR}
 		${LUA_INCLUDE_DIR}
 		${ODE_INCLUDE_DIR}
+		${ZLIB_INCLUDE_DIR}
 		${CMAKE_HOME_DIRECTORY}/common/
 		)
 
@@ -24,8 +25,8 @@ IF(WIN32)
 										${PNG_LIBRARY}
 										${JPEG_LIBRARY})
 
-  SET_TARGET_PROPERTIES(tux-target-srv PROPERTIES 
-	PROJECT_LABEL "Server: Tux Target FS"
+  SET_TARGET_PROPERTIES(tux-target-srv PROPERTIES
+	PROJECT_LABEL "Server - Tux Target FS"
 	LINK_FLAGS_DEBUG "/NODEFAULTLIB:libc;libcmt;libcmtd;msvcrt"
 	LINK_FLAGS_RELEASE "/NODEFAULTLIB:libc;libcmt;libcmtd;msvcrtd")
 ELSE(WIN32)

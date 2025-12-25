@@ -71,6 +71,7 @@ void CChatTask::init()
 	chatLineCount = CConfigFileTask::getInstance().configFile().getVar("ChatLineCount").asInt();
 	logChat = CConfigFileTask::getInstance().configFile().getVar("LogChat").asInt()!=0;
 	fp = NULL;
+	chatActive = false;
 	if(logChat)
 	{
 		fp = fopen ("chat.log", "at");
@@ -79,29 +80,22 @@ void CChatTask::init()
 		fprintf(fp,"-----------------------------------\n\n");
 		fprintf(fp,"%02d-%02d-%d\n",ltime->tm_mon+1,ltime->tm_mday,1900+ltime->tm_year);
 	}
-	
+
 }
 
 void CChatTask::update()
 {
-	// Get user input
-	string res = C3DTask::getInstance().kbGetString();
-	for (const char *src = res.c_str(); *src != '\0';src++)
+	// Check for Return key to toggle chat mode
+	if (C3DTask::getInstance().kbPressed(KeyRETURN))
 	{
-		if (*src == 27)
-			continue; // Escape
-		
-		if (*src == 8)
-		{ // Backspace
-			if (ChatInput.length() > 0)
-			{
-				ChatInput.resize(ChatInput.size()-1);
-			}
-			continue;
-		}
-		
-		if (*src == '\r')
+		if (!chatActive)
 		{
+			// Activate chat mode
+			chatActive = true;
+		}
+		else
+		{
+			// Send message and deactivate chat mode
 			if (ChatInput.length() > 0)
 			{
 				if (ChatInput[0] == '/')
@@ -133,18 +127,51 @@ void CChatTask::update()
 					CNetworkTask::getInstance().chat(ChatInput);
 			}
 			ChatInput = "";
-			continue;
-		}
-		
-		if (ChatInput.size() >= CHAT_COLUMNS - 10)
-			continue;
-		
-		//		if (isprint(*src))
-		if (((uint8)(*src))>=32)
-		{
-			ChatInput += *src;
+			chatActive = false;
 		}
 	}
+
+	// Only capture keyboard input when chat is active
+	if (chatActive)
+	{
+		// Get user input
+		string res = C3DTask::getInstance().kbGetString();
+		for (const char *src = res.c_str(); *src != '\0';src++)
+		{
+			if (*src == 27)
+			{
+				// Escape - cancel chat mode
+				ChatInput = "";
+				chatActive = false;
+				continue;
+			}
+
+			if (*src == 8)
+			{ // Backspace
+				if (ChatInput.length() > 0)
+				{
+					ChatInput.resize(ChatInput.size()-1);
+				}
+				continue;
+			}
+
+			if (*src == '\r')
+			{
+				// Handled above
+				continue;
+			}
+
+			if (ChatInput.size() >= CHAT_COLUMNS - 10)
+				continue;
+
+			//		if (isprint(*src))
+			if (((uint8)(*src))>=32)
+			{
+				ChatInput += *src;
+			}
+		}
+	}
+
 	if (C3DTask::getInstance().kbPressed(KeyPRIOR))
 	{
 		std::list<std::string>::reverse_iterator it = ChatText.rend();
@@ -186,7 +213,14 @@ void CChatTask::render()
 	{
 		CFontManager::getInstance().littlePrintf(0.0f, (float)i, "%s", (*it).c_str());
 	}
-	CFontManager::getInstance().littlePrintf(0.0f, (float)cl, "> %s", ChatInput.c_str());
+	if (chatActive)
+	{
+		CFontManager::getInstance().littlePrintf(0.0f, (float)cl, "> %s_", ChatInput.c_str());
+	}
+	else
+	{
+		CFontManager::getInstance().littlePrintf(0.0f, (float)cl, "> %s", ChatInput.c_str());
+	}
 }
 
 void CChatTask::release()

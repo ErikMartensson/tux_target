@@ -64,6 +64,12 @@ public:
 		return true;
 	}
 
+	// Override for modern NeL ICommand interface
+	virtual bool execute(const std::string &rawCommandString, const std::vector<std::string> &args, NLMISC::CLog &log, bool quiet, bool human = true)
+	{
+		return execute(args, log, quiet, human);
+	}
+
 	static void execute (CEntity *entity, const std::string &commandWithArgs, NLMISC::CLog &log, bool quiet = false, bool human = true);
 
 };

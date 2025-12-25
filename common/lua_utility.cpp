@@ -125,21 +125,17 @@ int luaGetTB()
 
 lua_State *luaOpen()
 {
-	lua_State *L = lua_open();
+	lua_State *L = luaL_newstate();
 	if(!L)
 	{
-		nlwarning("LUA: lua_open() failed while trying to create ");
+		nlwarning("LUA: luaL_newstate() failed while trying to create ");
 		return 0;
 	}
 	nlinfo("Lua open : L = 0x%p",L);
-	
-	lua_baselibopen(L);
-	lua_iolibopen(L);
-	lua_strlibopen(L);
-	lua_mathlibopen(L);
-	lua_dblibopen(L);
-	lua_tablibopen(L);
-	
+
+	// Lua 5.1 equivalent of opening all standard libraries
+	luaL_openlibs(L);
+
 	lua_register(L, "print", lua_nlinfo);
 	lua_register(L, "warn", lua_nlwarning);
 	lua_register(L, "error", lua_nlwarning);
@@ -150,8 +146,7 @@ lua_State *luaOpen()
 	lua_atpanic(L,mydefault_panic);
 
 	lua_settop(L, 0);
-	lua_pushliteral(L, "_TRACEBACK");
-	lua_gettable(L, LUA_GLOBALSINDEX);   // get traceback function
+	lua_getglobal(L, "_TRACEBACK");   // get traceback function
 	myTB = lua_gettop(L);
 	
 
@@ -186,10 +181,10 @@ bool luaLoad(lua_State * L, const string &filename)
 		return false;
 	}
 	
-	int res = lua_dofile(L, fn.c_str());
+	int res = luaL_dofile(L, fn.c_str());
 	if(res > 0)
 	{
-		nlwarning("LUA: lua_dofile(\"%s\") failed with code %d", filename.c_str(), res);
+		nlwarning("LUA: luaL_dofile(\"%s\") failed with code %d", filename.c_str(), res);
 		luaClose(L);
 		return false;
 	}
@@ -203,7 +198,7 @@ void luaClose(lua_State *&L)
 		nlwarning("LUA: Can't delete the L, already 0");
 		return;
 	}
-	lua_setgcthreshold(L, 0);  // collected garbage
+	lua_gc(L, LUA_GCCOLLECT, 0);  // collect garbage (Lua 5.1 API)
 	lua_close(L);
 	L = 0;
 }

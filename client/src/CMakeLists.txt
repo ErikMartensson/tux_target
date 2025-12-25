@@ -172,28 +172,46 @@ INCLUDE_DIRECTORIES( ${CMAKE_CURRENT_SOURCE_DIR}
 		${CMAKE_HOME_DIRECTORY}/common/
 		)
 
+# Add CURL include directory explicitly if not set by FindCURL
+IF(NOT CURL_INCLUDE_DIR AND CURL_FOUND)
+	GET_TARGET_PROPERTY(CURL_INCLUDE_DIRS CURL::libcurl INTERFACE_INCLUDE_DIRECTORIES)
+	IF(CURL_INCLUDE_DIRS)
+		INCLUDE_DIRECTORIES(${CURL_INCLUDE_DIRS})
+	ENDIF()
+ENDIF()
+
 IF(WIN32)
-	TARGET_LINK_LIBRARIES(tux-target	optimized ${NELMISC_LIBRARY}	debug ${NELMISC_LIBRARY_DEBUG} 
-									optimized ${NELNET_LIBRARY}		debug ${NELNET_LIBRARY_DEBUG} 
-									optimized ${NEL3D_LIBRARY}		debug ${NEL3D_LIBRARY_DEBUG}
-									${NELSOUND_LIBRARY}
-									${NELSNDDRV_LIBRARY}
-									${PLATFORM_LINKFLAGS}
+	TARGET_LINK_LIBRARIES(tux-target
+									# Base dependencies first
+									optimized C:/tux_target_deps/libxml2/lib/libxml2.lib debug C:/tux_target_deps/libxml2/lib/libxml2d.lib
 									${LUA_LIBRARIES}
-									${CURL_LIBRARY}
+									optimized C:/tux_target_deps/curl/lib/libcurl_imp.lib debug C:/tux_target_deps/curl/lib/libcurl-d_imp.lib
 									${SSLEAY_LIBRARY}
 									${EAY_LIBRARY}
-									${LIBXML2_LIBRARIES}
+									C:/tux_target_deps/vorbis/lib/vorbisfile.lib
+									C:/tux_target_deps/vorbis/lib/vorbis.lib
+									C:/tux_target_deps/ogg/lib/ogg.lib
 									${PNG_LIBRARIES}
 									${FREETYPE_LIBRARY}
-									${JPEG_LIBRARY})
+									${JPEG_LIBRARY}
+									# NeL libraries that depend on the above
+									optimized ${NELMISC_LIBRARY}	debug ${NELMISC_LIBRARY_DEBUG}
+									optimized ${NELNET_LIBRARY}		debug ${NELNET_LIBRARY_DEBUG}
+									optimized ${NEL3D_LIBRARY}		debug ${NEL3D_LIBRARY_DEBUG}
+									optimized ${NELGEORGES_LIBRARY}	debug ${NELGEORGES_LIBRARY_DEBUG}
+									optimized ${NELLIGO_LIBRARY}	debug ${NELLIGO_LIBRARY_DEBUG}
+									optimized ${NELSOUND_LIBRARY}	debug ${NELSOUND_LIBRARY_DEBUG}
+									optimized ${NELSNDDRV_LIBRARY}	debug ${NELSNDDRV_LIBRARY_DEBUG}
+									${PLATFORM_LINKFLAGS}
+									ws2_32.lib)
 
- 	SET_TARGET_PROPERTIES(tux-target PROPERTIES 
-		PROJECT_LABEL "Client: Tux Target"
+ 	SET_TARGET_PROPERTIES(tux-target PROPERTIES
+		PROJECT_LABEL "Client Tux Target"
 		LINK_FLAGS_DEBUG "/NODEFAULTLIB:libc;libcmt;libcmtd;msvcrt"
 		LINK_FLAGS_RELEASE "/NODEFAULTLIB:libc;libcmt;libcmtd;msvcrtd")
 
 	ADD_DEFINITIONS(-DCURL_STATICLIB)
+	ADD_DEFINITIONS(-DLIBXML_STATIC)
 ELSE(WIN32)
 	TARGET_LINK_LIBRARIES(tux-target	${NELMISC_LIBRARY} 
 										${NELNET_LIBRARY} 

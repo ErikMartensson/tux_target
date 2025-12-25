@@ -45,7 +45,7 @@
 // Classes
 //
 
-typedef std::map<std::string, CHashKey> filename2CRC;
+typedef std::map<std::string, NLMISC::CHashKey> filename2CRC;
 class CResourceManagerRunnable;
 
 class CResourceManager : public NLMISC::CSingleton<CResourceManager>, public ITask

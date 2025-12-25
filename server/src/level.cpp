@@ -121,10 +121,15 @@ void CLevel::_luaInit()
 
 	string ServerLua;
 	luaGetGlobalVariable(_luaSession, ServerLua);
-	luaLoad(CLuaEngine::getInstance().session(),ServerLua);
 
-	if(!CLuaEngine::getInstance().session())
-		return;
+	// Only try to load ServerLua if it's defined and not empty
+	if (!ServerLua.empty())
+	{
+		luaLoad(CLuaEngine::getInstance().session(),ServerLua);
+
+		if(!CLuaEngine::getInstance().session())
+			return;
+	}
 	luaGetGlobalVariable(_luaSession, Name);
 	//	nlinfo("level name '%s'", Name.c_str());
 	

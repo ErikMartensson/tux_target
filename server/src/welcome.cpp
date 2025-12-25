@@ -171,6 +171,25 @@ void cbLSChooseShard (CMessage &msgin, const std::string &serviceName, TServiceI
 	if(reason.empty())
 		msgout.serial(ListenAddr);
 
+	// DEBUG: Log the exact SCS message bytes
+	nlinfo("=== SCS MESSAGE HEX DUMP ===");
+	nlinfo("Reason: '%s' (length %d)", reason.c_str(), reason.length());
+	nlinfo("Cookie: '%s' (length %d)", cookie.c_str(), cookie.length());
+	if(reason.empty())
+		nlinfo("Address: '%s' (length %d)", ListenAddr.c_str(), ListenAddr.length());
+
+	uint32 msgLen = msgout.length();
+	nlinfo("Total message length: %d bytes", msgLen);
+	const uint8 *buffer = msgout.buffer();
+	for(uint32 i = 0; i < msgLen; i += 16) {
+		string hexLine;
+		for(uint32 j = 0; j < 16 && (i+j) < msgLen; j++) {
+			hexLine += toString("%02X ", buffer[i+j]);
+		}
+		nlinfo("  %04X: %s", i, hexLine.c_str());
+	}
+	nlinfo("=== END SCS HEX DUMP ===");
+
 	CUnifiedNetwork::getInstance()->send("LS", msgout);
 
 	//UserIdNameAssociations.insert(make_pair(cookie, make_pair(userName,make_pair(userTexture,totalScore))));
@@ -275,6 +294,33 @@ static CSynchronized<vector<pair<uint32, uint8> > > ConnectedClients("ConnectedC
 void initWelcome()
 {
 	ThreadId = getThreadId();
+
+	// DEBUG: Create a test SCS message and dump it (before LAN mode check)
+	nlinfo("=== CREATING TEST SCS MESSAGE ===");
+	CMessage testMsg("SCS");
+	string testReason = "";  // Empty for success
+	string testCookie = "12345678|ABCDEF00|00000042";
+	string testAddr = "127.0.0.1:51574";
+
+	testMsg.serial(testReason);
+	testMsg.serial(testCookie);
+	if(testReason.empty())
+		testMsg.serial(testAddr);
+
+	nlinfo("Test SCS - Reason: '%s' (len %d)", testReason.c_str(), testReason.length());
+	nlinfo("Test SCS - Cookie: '%s' (len %d)", testCookie.c_str(), testCookie.length());
+	nlinfo("Test SCS - Address: '%s' (len %d)", testAddr.c_str(), testAddr.length());
+	nlinfo("Test SCS - Total message length: %d bytes", testMsg.length());
+
+	const uint8 *buffer = testMsg.buffer();
+	for(uint32 i = 0; i < testMsg.length(); i += 16) {
+		string hexLine;
+		for(uint32 j = 0; j < 16 && (i+j) < testMsg.length(); j++) {
+			hexLine += toString("%02X ", buffer[i+j]);
+		}
+		nlinfo("  %04X: %s", i, hexLine.c_str());
+	}
+	nlinfo("=== END TEST SCS MESSAGE ===");
 
 	if(IService::getInstance()->ConfigFile.getVar("ShardId").asInt() == 0)
 	{

@@ -171,8 +171,9 @@ void C3DTask::init()
 	if(CConfigFileTask::instance().configFile().getVar("VSync").asInt() == 0)
 		Driver->setSwapVBLInterval(0);
 
-	if(CConfigFileTask::instance().configFile().getVar("NativeFragmentProgramsOnly").asInt() == 0)
-		Driver->forceNativeFragmentPrograms(false);
+	// forceNativeFragmentPrograms was removed from NeL
+	//if(CConfigFileTask::instance().configFile().getVar("NativeFragmentProgramsOnly").asInt() == 0)
+	//	Driver->forceNativeFragmentPrograms(false);
 
 #ifdef NL_OS_WINDOWS
 	Fullscreen = CConfigFileTask::instance().configFile().getVar("Fullscreen").asInt()==1;

@@ -469,7 +469,8 @@ void mtpTarget::init()
 	
 //	SleepTime = CConfigFileTask::getInstance().configFile().getVar("Sleep").asInt();
 
-	setReportEmailFunction ((void*)sendEmail);
+	// setReportEmailFunction was removed from NeL
+	//setReportEmailFunction ((void*)sendEmail);
 
 	CMtpTarget::getInstance().State = CMtpTarget::eLoginPassword;
 	

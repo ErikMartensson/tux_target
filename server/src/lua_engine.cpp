@@ -150,8 +150,11 @@ void CLuaEngine::init(const std::string &filename)
 	Lunar<CModuleProxy>::Register(session());
 	Lunar<CEntityProxy>::Register(session());
 
+	// Only load helpers.lua if it exists
 	string path = CPath::lookup("helpers.lua", false, false);
-	luaLoad(session(),path);
+	if (!path.empty())
+		luaLoad(session(),path);
+
 	luaLoad(session(),filename);
 	
 }

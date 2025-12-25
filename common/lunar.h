@@ -5,6 +5,7 @@
 extern "C" {
 #include "lua.h"
 #include "lauxlib.h"
+#include "lua_compat.h"
 }
 
 template <typename T> class Lunar {
@@ -23,7 +24,7 @@ public:
     // store method table in globals so that
     // scripts can add functions written in Lua.
     lua_pushvalue(L, methods);
-    set(L, LUA_GLOBALSINDEX, T::className);
+    lua_setglobal(L, T::className);
 
     // hide metatable from Lua getmetatable()
     //lua_pushvalue(L, methods);

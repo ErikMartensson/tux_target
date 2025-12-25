@@ -213,7 +213,8 @@ end:
 			}
 			else
 			{
-				if (!icom->execute(NULL, commands[u].second, log, quiet, human))
+				// Modern NeL ICommand::execute requires rawCommandString as first parameter
+				if (!icom->execute(commands[u].first, commands[u].second, log, quiet, human))
 				{
 					if (!quiet) log.displayNL("Bad icommand usage, try 'help %s'", commands[u].first.c_str());
 				}

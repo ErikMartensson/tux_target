@@ -6,7 +6,7 @@
 
 > A free multiplayer online action game where you roll down a giant ramp and delicately land on platforms to score points. Fight with and against players in this mix of action, dexterity, and strategy - inspired by Monkey Target from Super Monkey Ball.
 
-**Status:** 🚧 Active Revival - Server functional, client connection in progress
+**Status:** ✅ Playable - Version 1.2.2a client and server fully functional
 
 ---
 
@@ -34,85 +34,103 @@
 
 1. ✅ **Building a local server** - Run your own game server
 2. ✅ **Creating a modern login service** - TypeScript/Deno replacement for authentication
-3. 🚧 **Compiling the client** - Build from source for debugging and modifications
-4. 📋 **Windows support** - Currently builds on Linux/WSL, Windows build coming soon
+3. ✅ **Compiling the client** - Build from source for debugging and modifications
+4. ✅ **Windows support** - Full Windows build with Visual Studio 2022
+
+### Version Strategy
+
+We're currently running **version 1.2.2a** (from this repository's source code) for both client and server. This ensures full compatibility between all components.
+
+**Future Plans:**
+- Port features and improvements from version 1.5.19 where possible
+- Add additional levels from 1.5.19 release
+- Consider protocol upgrade to 1.5.19 if compatible with gameplay
+
+The original v1.5.19 server source is unavailable, so we're starting with the v1.2.2a codebase we have and will enhance it over time.
 
 ---
 
 ## Current Status
 
-### What Works
+### What Works ✅
 
-- ✅ **Game Server:** Fully functional, compiled and tested on Ubuntu/WSL
+- ✅ **Game Server:** Fully functional on Windows, 69 levels loaded
+- ✅ **Game Client:** Fully functional on Windows with OpenGL/OpenAL drivers
 - ✅ **Login Service:** Modern TypeScript implementation handles authentication
 - ✅ **Database:** SQLite-based user and shard management
-- ✅ **Physics:** ODE engine working with Lua scripting
-- ✅ **Network:** VLP (login) protocol working with game client
+- ✅ **Physics:** ODE 0.16.5 engine with Lua 5.x scripting
+- ✅ **Network:** Full protocol working (VLP login + game server connection)
+- ✅ **Gameplay:** Keyboard controls, bot AI, level transitions, scoring
+- ✅ **Graphics:** NeL 3D rendering with skybox, models, particles
+- ✅ **Sound:** OpenAL audio system
 
-### What's In Progress
+### Known Issues ⚠️
 
-- 🚧 **Client Connection:** SCS (shard selection) message format debugging
-- 🚧 **Windows Build:** CMake configuration for Visual Studio
-- 📋 **Client Compilation:** Source code ready, build system pending
-- 📋 **Documentation:** Consolidating build and setup guides
+- ⚠️ **Water rendering disabled** - Missing texture files cause crash
+- ⚠️ **Penguin models overlapping** - Scale/positioning issue (doesn't prevent gameplay)
+- ⚠️ **Limited to v1.2.2a features** - Some v1.5.19 improvements not yet ported
+
+See [docs/RUNTIME_FIXES.md](docs/RUNTIME_FIXES.md) for detailed issue documentation.
 
 ---
 
-## Quick Start (Ubuntu/WSL)
+## Quick Start (Windows)
 
 **Prerequisites:**
-- Ubuntu 22.04+ or WSL2
+- Windows 10/11
+- Visual Studio 2022 Build Tools
+- CMake 3.20+
 - Deno 2.6.0+ (for login service)
-- Build tools (gcc, cmake, ninja)
+- Git Bash (recommended for running scripts)
 
-### 1. Install Dependencies
+### 1. Build Dependencies
+
+See **[docs/BUILDING.md](docs/BUILDING.md)** for complete instructions on building:
+- NeL Framework (from Ryzom Core)
+- ODE Physics Library (0.16.5)
+- External dependencies (CURL, Lua, libxml2, etc.)
+
+### 2. Build Game Client & Server
 
 ```bash
-sudo apt update
-sudo apt install -y build-essential cmake git ninja-build \
-    libxml2-dev libfreetype6-dev libpng-dev libjpeg-dev \
-    libgl1-mesa-dev libglu1-mesa-dev libxxf86vm-dev \
-    libxrandr-dev libxrender-dev libmysqlclient-dev \
-    lua5.1 liblua5.1-0-dev libcurl4-openssl-dev \
-    libluabind-dev libode-dev
+cd tux_target
+mkdir build && cd build
+
+# Configure
+cmake .. -DBUILD_CLIENT=ON -DBUILD_SERVER=ON \
+  -DWITH_STATIC=ON -DWITH_STATIC_LIBXML2=ON -DWITH_STATIC_CURL=ON
+
+# Build
+cmake --build . --config Release -j 24
+
+# Run post-build setup
+cd ..
+./scripts/post_build.sh  # or scripts\post_build.bat on Windows
 ```
 
-### 2. Build NeL Framework
+### 3. Start Services
 
 ```bash
-git clone https://github.com/ryzom/ryzomcore.git
-cd ryzomcore && mkdir build && cd build
-cmake -G Ninja -DCMAKE_BUILD_TYPE=Release -DWITH_SOUND=OFF ..
-ninja
-cd ../..
-```
-
-### 3. Build Game Server
-
-```bash
-cd tux_target  # This repository
-make -C server update
-make -C server all
-```
-
-### 4. Start Services
-
-```bash
-# Terminal 1: Start game server
-cd server/src
-LD_LIBRARY_PATH=/path/to/ryzomcore/build/lib:$LD_LIBRARY_PATH ./mtp_target_service
-
-# Terminal 2: Start login service (requires Deno)
+# Terminal 1: Start login service
 cd login-service-deno
-deno task db-setup  # First time only
 deno task login
 
-# Terminal 3: Start HTTP server (requires sudo for port 80)
-cd login-service-deno
-sudo deno task http
+# Terminal 2: Start game server
+cd build/bin/Release
+./tux-target-srv.exe
+
+# Terminal 3: Start game client
+cd build/bin/Release
+./tux-target.exe
 ```
 
-For detailed instructions, see **[docs/BUILDING.md](docs/BUILDING.md)**.
+**Controls:**
+- **Arrow keys:** Steer penguin (requires speed in ball mode)
+- **CTRL:** Toggle between ball/gliding modes
+- **Enter:** Open chat (press again to send)
+- **Escape:** Cancel chat
+
+For detailed build instructions and troubleshooting, see **[docs/BUILDING.md](docs/BUILDING.md)** and **[docs/RUNTIME_FIXES.md](docs/RUNTIME_FIXES.md)**.
 
 ---
 
@@ -120,10 +138,12 @@ For detailed instructions, see **[docs/BUILDING.md](docs/BUILDING.md)**.
 
 | Document | Description |
 |----------|-------------|
-| [**BUILDING.md**](docs/BUILDING.md) | Complete build guide for all platforms |
+| [**BUILDING.md**](docs/BUILDING.md) | Complete build guide for Windows (NeL, ODE, client, server) |
+| [**RUNTIME_FIXES.md**](docs/RUNTIME_FIXES.md) | Runtime crashes and fixes (water, levels, controls, files) |
 | [**MODIFICATIONS.md**](docs/MODIFICATIONS.md) | Source code changes for modern compatibility |
 | [**PROTOCOL_NOTES.md**](docs/PROTOCOL_NOTES.md) | NeL network protocol technical reference |
-| [**docs/archive/**](docs/archive/) | Historical development notes |
+| [**scripts/post_build.sh**](scripts/post_build.sh) | Automated post-build file copy script |
+| [**docs/archive/**](docs/archive/) | Historical development notes (reference only) |
 
 ---
 
@@ -244,17 +264,20 @@ We'd love your help! This is a community effort to preserve a fun open-source ga
 
 ## Known Issues
 
-### Critical
-- **SCS Message Crash:** Client crashes when receiving shard connection info from login service
-  - Root cause: Binary/source mismatch - installed client doesn't match source code
-  - Solution in progress: Compile client from source
+### Remaining Issues
+- **Water rendering disabled** - Missing texture files (water_env.tga, water_disp.tga) cause client crash
+  - Workaround: `DisplayWater = 0` in config
+- **Penguin model overlap** - Visual issue, all penguins render in same space (doesn't prevent gameplay)
+- **Limited to v1.2.2a features** - Some improvements from v1.5.19 not yet ported
 
-### Minor
-- Data directory path warnings (cosmetic)
-- Time format compilation warnings (non-functional)
-- Windows build not yet configured
+### Fixed Issues ✅
+- ✅ Client/server crashes - All critical crashes resolved
+- ✅ Keyboard controls - Chat no longer captures arrow keys
+- ✅ Level loading - All 69 levels load correctly
+- ✅ Skybox rendering - Correct antarctic theme displays
+- ✅ Network protocol - Full compatibility achieved
 
-See [Issues](../../issues) for full bug tracker.
+See [docs/RUNTIME_FIXES.md](docs/RUNTIME_FIXES.md) for complete issue history and [Issues](../../issues) for bug tracker.
 
 ---
 

@@ -334,7 +334,8 @@ void CSoundManager::play ()
 			if(AudioMixer->playMusic(m3uVector[m3uNowPlaying], 0, true, false))
 			{
 				string SongTitle;
-				if(AudioMixer->getSongTitle(m3uVector[m3uNowPlaying], SongTitle))
+				float SongLength;
+				if(AudioMixer->getSongTitle(m3uVector[m3uNowPlaying], SongTitle, SongLength))
 				{
 					CHudTask::getInstance().addSysMessage("Now playing " + SongTitle );
 				}
