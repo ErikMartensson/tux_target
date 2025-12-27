@@ -61,6 +61,7 @@ void CWaitingStartSessionState::update()
 		for(it = CEntityManager::getInstance().entities().begin(); it != CEntityManager::getInstance().entities().end(); it++)
 		{
 			(*it)->InGame = true;
+			(*it)->FreezeCommand = false;  // Unfreeze entities when game starts
 		}
 		changeState(CRunningSessionState::getInstance());
 		// set gravity if the game started
