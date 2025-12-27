@@ -71,13 +71,13 @@ void CModuleCommon::init()
 */
 
 CModuleCommon::CModuleCommon() : CEditableElementCommon()
-{ 
+{
 	_type = Module;
 	Bounce = false;
 	Collide = true;
 	Score = 0;
-	Accel = 0;
-	Friction = 0;
+	Accel = 0.0001f; // Small value enables steering during descent
+	Friction = 0.01f; // Very light friction
 	Enabled = true;
 }
 
@@ -103,20 +103,20 @@ void CModuleCommon::display(CLog *log) const
 }
 
 
-void CModuleCommon::bounce(bool b) 
+void CModuleCommon::bounce(bool b)
 {
-	Bounce = b; 
+	Bounce = b;
 }
 
-void CModuleCommon::collide(bool c) 
+void CModuleCommon::collide(bool c)
 {
-	Collide = c; 
+	Collide = c;
 }
 
-void CModuleCommon::enabled(bool e) 
+void CModuleCommon::enabled(bool e)
 {
 	if(Enabled==e) return;
-	Enabled = e; 
+	Enabled = e;
 }
 
 
