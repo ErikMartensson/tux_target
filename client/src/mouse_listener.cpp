@@ -61,7 +61,7 @@ C3dMouseListener::C3dMouseListener()
 {
 	MouseX = 0.0f;
 	MouseY = 0.0f;
-	MouseWheel = 0;
+	MouseWheel = 3;  // Default to 2 steps zoomed out for better view
 	_allowMouse = 0;
 	_inverseMouse = false;
 }
@@ -80,7 +80,7 @@ void C3dMouseListener::reset()
 {
 	MouseX = 0.0f;
 	MouseY = 0.0f;
-	MouseWheel = 0;
+	MouseWheel = 3;  // Default to 2 steps zoomed out for better view
 }
 
 
@@ -123,7 +123,7 @@ void C3dMouseListener::operator ()(const CEvent& event)
 		{
 			MouseX = 0.0f;
 			MouseY = 0.0f;
-			MouseWheel = 0;
+			// Don't reset MouseWheel - keep current zoom level
 		}
 		else if (event == EventMouseWheelId)
 		{
@@ -149,7 +149,7 @@ void C3dMouseListener::operator ()(const CEvent& event)
 		{
 			MouseX = 0.0f;
 			MouseY = 0.0f;
-			MouseWheel = 0;
+			// Don't reset MouseWheel - keep current zoom level
 		}
 		else if (event==EventMouseWheelId)
 		{
