@@ -6,7 +6,7 @@
 
 > A free multiplayer online action game where you roll down a giant ramp and delicately land on platforms to score points. Fight with and against players in this mix of action, dexterity, and strategy - inspired by Monkey Target from Super Monkey Ball.
 
-**Status:** ✅ Playable - Version 1.2.2a client and server fully functional
+**Status:** ⚠️ Work in Progress - Version 1.2.2a client and server compile and run, but with significant bugs
 
 ---
 
@@ -54,21 +54,25 @@ The original v1.5.19 server source is unavailable, so we're starting with the v1
 
 ### What Works ✅
 
-- ✅ **Game Server:** Fully functional on Windows, 69 levels loaded
-- ✅ **Game Client:** Fully functional on Windows with OpenGL/OpenAL drivers
+- ✅ **Build System:** Full Windows build with Visual Studio 2022 working
+- ✅ **Game Server:** Compiles and runs on Windows, 71 levels loaded
+- ✅ **Game Client:** Compiles and runs on Windows with OpenGL/OpenAL drivers
 - ✅ **Login Service:** Modern TypeScript implementation handles authentication
 - ✅ **Database:** SQLite-based user and shard management
-- ✅ **Physics:** ODE 0.16.5 engine with Lua 5.x scripting
+- ✅ **Physics:** ODE 0.16.5 engine with Lua 5.x scripting (mostly working)
 - ✅ **Network:** Full protocol working (VLP login + game server connection)
-- ✅ **Gameplay:** Keyboard controls, bot AI, level transitions, scoring
-- ✅ **Graphics:** NeL 3D rendering with skybox, models, particles
-- ✅ **Sound:** OpenAL audio system
+- ✅ **Basic Controls:** Keyboard input (arrow keys, Ctrl, Enter for chat)
 
 ### Known Issues ⚠️
 
-- ⚠️ **Water rendering disabled** - Missing texture files cause crash
-- ⚠️ **Penguin models overlapping** - Scale/positioning issue (doesn't prevent gameplay)
+**Critical Gameplay Bugs:**
+- ⚠️ **Scoring system broken** - Landing on platforms doesn't award points
+- ⚠️ **Water rendering disabled** - Missing texture files cause crash (DisplayWater = 0 workaround)
+
+**Visual/Polish Issues:**
 - ⚠️ **Limited to v1.2.2a features** - Some v1.5.19 improvements not yet ported
+
+**This project is a work in progress.** The game runs and you can play through multiple levels, but scoring doesn't work yet.
 
 See [docs/RUNTIME_FIXES.md](docs/RUNTIME_FIXES.md) for detailed issue documentation.
 
@@ -264,16 +268,24 @@ We'd love your help! This is a community effort to preserve a fun open-source ga
 
 ## Known Issues
 
-### Remaining Issues
+### Critical Gameplay Bugs
+- **Scoring system broken** - Landing on platforms doesn't award points to scoreboard
 - **Water rendering disabled** - Missing texture files (water_env.tga, water_disp.tga) cause client crash
   - Workaround: `DisplayWater = 0` in config
-- **Penguin model overlap** - Visual issue, all penguins render in same space (doesn't prevent gameplay)
+
+### Other Issues
 - **Limited to v1.2.2a features** - Some improvements from v1.5.19 not yet ported
 
 ### Fixed Issues ✅
-- ✅ Client/server crashes - All critical crashes resolved
-- ✅ Keyboard controls - Chat no longer captures arrow keys
-- ✅ Level loading - All 69 levels load correctly
+- ✅ Build system - Full Windows compilation working
+- ✅ Client/server crashes - Major crashes resolved
+- ✅ **Server level transition crashes** - Lua 5.x compatibility fixes applied
+- ✅ Keyboard controls - Arrow keys work for steering, chat toggle working
+- ✅ Physics steering - Entity acceleration and module override fixed
+- ✅ Penguin visual size - Mesh scaling applied (was too large)
+- ✅ Camera controls - Zoom persists on mouse drag, defaults to good view
+- ✅ FreezeCommand bug - Entities properly unfrozen on game start
+- ✅ Level loading - All 71 levels load correctly
 - ✅ Skybox rendering - Correct antarctic theme displays
 - ✅ Network protocol - Full compatibility achieved
 

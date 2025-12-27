@@ -2,7 +2,7 @@
 
 This document details all changes made to the MTP Target source code for compatibility with modern systems (Ubuntu 22.04+, 64-bit, current libraries).
 
-**Last Updated:** December 22, 2025
+**Last Updated:** December 27, 2025 (Session 6)
 **Status:** All modifications applied and tested
 
 ---
@@ -33,8 +33,10 @@ These modifications enable compilation on modern systems without changing game f
 | [server/src/lua_engine.cpp](#5-64-bit-compatibility-fixes) | 5 | size_t |
 | [login_service/connection_client.cpp](#6-login-service-64-bit-fixes) | ~4 | uintptr_t, debug |
 | [login_service/connection_ws.cpp](#6-login-service-64-bit-fixes) | 1 | uintptr_t |
+| [common/lua_utility.cpp](#7-lua-error-logging-enhancement) | 8 | Error messages |
+| [14 Lua server scripts](#8-lua-5x-table-declarations) | 1-3 each | Lua 5.x compat |
 
-**Total:** 10 files, ~85 lines changed
+**Total:** 25 files, ~110 lines changed
 
 ---
 
@@ -381,15 +383,94 @@ However, this is not recommended as those dependencies are no longer available i
 
 ---
 
+## 7. Lua Error Logging Enhancement
+
+**File:** [common/lua_utility.cpp](../common/lua_utility.cpp)
+
+### Problem
+When Lua scripts failed to load, the server only showed generic error codes without the actual error message. This made debugging Lua issues very difficult.
+
+### Changes
+
+#### Error Message Extraction (lines 184-192)
+**Before:**
+```cpp
+int res = luaL_dofile(L, fn.c_str());
+if(res > 0)
+{
+    nlwarning("LUA: luaL_dofile(\"%s\") failed with code %d", filename.c_str(), res);
+    luaClose(L);
+    return false;
+}
+```
+
+**After:**
+```cpp
+int res = luaL_dofile(L, fn.c_str());
+if(res > 0)
+{
+    const char *msg = lua_tostring(L, -1);
+    if (msg == NULL) msg = "(error with no message)";
+    nlwarning("LUA: luaL_dofile(\"%s\") failed with code %d: %s", filename.c_str(), res, msg);
+    luaClose(L);
+    return false;
+}
+```
+
+### Why This Matters
+This change extracts the actual Lua error message from the stack, making it immediately clear what went wrong. For example, instead of "failed with code 1", we now get "failed with code 1: attempt to index a nil value (global 'CEntity')".
+
+This improvement was critical for diagnosing the Lua 5.x compatibility issues.
+
+---
+
+## 8. Lua 5.x Table Declarations
+
+**Files:** 14 Lua server scripts in [mtp-target-src/data/lua/](../mtp-target-src/data/lua/)
+
+### Problem
+Lua 5.0 auto-created tables when methods were defined on them. For example, `function CEntity:init()` would automatically create the `CEntity` table.
+
+Lua 5.x changed this behavior - tables must exist before methods can be defined on them. The server crashed with "attempt to index a nil value (global 'CEntity')" errors.
+
+### Changes
+
+Added table declarations at the top of each affected Lua server script:
+
+```lua
+CEntity = CEntity or {}  -- Creates table if it doesn't exist
+CModule = CModule or {}  -- Only in files that use CModule
+CLevel = CLevel or {}    -- Only in files that use CLevel
+```
+
+### Files Modified
+- level_bowls1_server.lua (added CEntity)
+- level_city_paint_server.lua (added CEntity, CModule, CLevel)
+- level_darts_server.lua (added CEntity)
+- level_default_server.lua (added CEntity)
+- level_extra_ball_server.lua (added CEntity)
+- level_gates_server.lua (added CEntity)
+- level_paint_server.lua (added CEntity, CModule, CLevel)
+- level_stairs_server.lua (added CEntity)
+- level_sun_extra_ball_server.lua (added CEntity)
+- level_team_server.lua (added CEntity, CModule)
+- And 4 more with similar patterns
+
+### Why This Matters
+Without these declarations, the server crashed during level transitions when loading Lua server scripts. This fix enables stable gameplay through all 71 levels without crashes.
+
+**Note:** These are Lua runtime files, not C++ source code, but they're essential for the game to function with Lua 5.x.
+
+---
+
 ## Future Modifications
 
 Potential future changes:
 
-- **Windows Build:** CMake configuration for Visual Studio
-- **Client Compilation:** Apply similar fixes to client code
-- **Modern C++:** Update to C++11/14/17 features
-- **Cross-platform:** Unified build system (CMake only)
-- **Domain Changes:** Replace hardcoded mtp-target.org references
+- **Modern C++:** Update to C++11/14/17 features where beneficial
+- **Domain Changes:** Replace hardcoded mtp-target.org references (if hosting publicly)
+- **Scoring System:** Fix broken scoring logic (critical priority)
+- **Water Rendering:** Fix WaterPoolManager initialization or find correct textures
 
 ---
 
@@ -398,8 +479,11 @@ Potential future changes:
 If you encounter issues after applying these modifications:
 
 1. Check that you have the correct library versions installed
-2. Verify your compiler is GCC 7+ or equivalent
+2. Verify your compiler is GCC 7+ (Linux) or Visual Studio 2022 (Windows)
 3. Review the [BUILDING.md](BUILDING.md) guide
 4. Check for additional system-specific requirements
+5. For Lua errors, check that table declarations are present in level scripts
 
 For protocol debugging and network issues, see [PROTOCOL_NOTES.md](PROTOCOL_NOTES.md).
+
+For runtime crashes and configuration issues, see [RUNTIME_FIXES.md](RUNTIME_FIXES.md).

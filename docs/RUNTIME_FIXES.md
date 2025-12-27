@@ -2,7 +2,7 @@
 
 This document describes all the fixes required after building the client and server to make the game actually playable.
 
-**Last Updated:** December 25, 2024
+**Last Updated:** December 27, 2025 (Session 6)
 
 ---
 
@@ -66,12 +66,12 @@ cp mtp-target-src/data/level/*.lua build/bin/Release/data/level/
 - Log shows: `Failed to load data/lua/level_darts_server.lua with error code 1`
 
 **Root Cause:**
-- All 69 level files referenced server Lua scripts with incorrect relative paths
+- All 71 level files referenced server Lua scripts with incorrect relative paths
 - Level files contained: `ServerLua = "level_darts_server.lua"`
 - Actual location: `data/lua/level_darts_server.lua`
 
 **Fix:**
-- Updated all 69 level files using sed:
+- Updated all 71 level files using sed:
 ```bash
 cd build/bin/Release/data/level
 sed -i 's/ServerLua = "\([^"]*\)"/ServerLua = "data\/lua\/\1"/' *.lua
@@ -84,6 +84,48 @@ sed -i 's/ServerLua = "\([^"]*\)"/ServerLua = "data\/lua\/\1"/' *.lua
 ```
 
 **Status:** ✅ Fixed - level transitions now work
+
+---
+
+### 3b. Server Crash: Lua 5.x Compatibility
+
+**Symptom:**
+- Server crashes during level transitions after fixing Lua script paths
+- Log shows: `attempt to index a nil value (global 'CEntity')`
+- Error occurs when loading Lua server scripts for certain levels
+
+**Root Cause:**
+- Lua 5.0 auto-created tables when defining methods: `function CEntity:init()` would create `CEntity` table
+- Lua 5.x requires explicit table declaration before defining methods
+- Level server scripts used pattern `function CEntity:method()` without declaring `CEntity = {}`
+
+**Fix:**
+Added table declarations to 14 Lua server scripts in [mtp-target-src/data/lua/](../mtp-target-src/data/lua/):
+```lua
+CEntity = CEntity or {}
+CModule = CModule or {}  -- if needed
+CLevel = CLevel or {}    -- if needed
+```
+
+**Files Modified:**
+- level_bowls1_server.lua
+- level_city_paint_server.lua
+- level_darts_server.lua
+- level_default_server.lua
+- level_extra_ball_server.lua
+- level_gates_server.lua
+- level_paint_server.lua
+- level_stairs_server.lua
+- level_sun_extra_ball_server.lua
+- level_team_server.lua
+- And 4 more with similar patterns
+
+**Also Updated:**
+- [common/lua_utility.cpp:184-192](../common/lua_utility.cpp#L184-L192) - Added `lua_tostring()` error extraction for better debugging
+- [scripts/post_build.sh](../scripts/post_build.sh#L130-L139) - Automatically copies Lua files with fixes
+- [scripts/post_build.bat](../scripts/post_build.bat#L107-L116) - Windows version
+
+**Status:** ✅ Fixed - server stable through all 71 level transitions
 
 ---
 
@@ -110,21 +152,31 @@ cp sky_snow.shape sky.shape
 
 ---
 
-### 5. Penguin Rendering Issues
+### 5. Penguin Visual Size Too Large
 
 **Symptom:**
-- Penguins rendered too large and overlapping each other
-- All penguins occupy the same visual space
+- Penguins rendered 100x too large compared to level geometry
+- Camera too close, making penguin difficult to see properly
 
 **Root Cause:**
-- Unknown - possibly scale settings in model files or rendering code
+- Entity mesh scaling not applied in client rendering code
+- Scale factor GScale (0.01) defined but not used on mesh transform matrix
 
-**Status:** ⚠️ Unfixed - visual issue but doesn't prevent gameplay
+**Fix:**
+Modified [client/src/entity.cpp:197-215](../client/src/entity.cpp#L197-L215):
+```cpp
+CMatrix m2 = _Mesh.getMatrix();
+m2.setScale(CVector(2*GScale, 2*GScale, 2*GScale));  // Scale by 0.02
+_Mesh.setMatrix(m2);
+```
 
-**Investigation Needed:**
-- Check penguin model files (.shape files)
-- Review entity rendering scale in client code
-- Compare with screenshots from original game
+**Additional Fix - Camera Distance:**
+Modified [mtp_target_default.cfg](../build/bin/Release/mtp_target_default.cfg#L254-L261):
+- Camera distance values were 100x too large (matched old penguin scale)
+- Updated to values from 1.5.19 source divided by 100
+- Example: `CloseBackDist=3` → `CloseBackDist=0.03`
+
+**Status:** ✅ Fixed - penguins now proper size, camera at correct distance
 
 ---
 
@@ -166,6 +218,30 @@ Modified chat system to only capture input when explicitly activated:
 **Files Modified:**
 - [client/src/chat_task.h](../client/src/chat_task.h): Added chatActive flag
 - [client/src/chat_task.cpp](../client/src/chat_task.cpp): Implemented chat toggle logic
+
+---
+
+### 6b. Camera Controls - Zoom Reset on Mouse Drag
+
+**Symptom:**
+- Camera zoom resets to most zoomed-in view when left-clicking to rotate camera
+- Annoying user experience - zoom setting doesn't persist during camera rotation
+
+**Root Cause:**
+- Mouse listener reset `MouseWheel = 0` on mouse button release
+- This was in addition to resetting MouseX and MouseY rotation values
+
+**Fix:**
+Modified [client/src/mouse_listener.cpp:122-127,148-153](../client/src/mouse_listener.cpp#L122-L127):
+- Removed `MouseWheel = 0;` from `EventMouseUpId` handlers (cases 2 and 3)
+- Only MouseX and MouseY reset on mouse release, zoom level persists
+
+**Additional Improvement - Default Zoom:**
+Modified [client/src/mouse_listener.cpp:64,83](../client/src/mouse_listener.cpp#L64):
+- Changed default from `MouseWheel = 0` (fully zoomed in) to `MouseWheel = 3` (2 steps out)
+- Provides better starting view without manual zooming
+
+**Status:** ✅ Fixed - zoom persists during camera rotation, better default view
 
 ---
 
@@ -274,8 +350,11 @@ The script automatically:
 | Water rendering crash | Client | Critical | ✅ Fixed | mtp_target_default.cfg |
 | Missing level files | Server | Critical | ✅ Fixed | Copied from archive |
 | Lua script paths | Server | Critical | ✅ Fixed | Level files updated |
+| Lua 5.x compatibility | Server | Critical | ✅ Fixed | 14 Lua server scripts |
 | Wrong skybox | Client | Minor | ✅ Fixed | Replaced sky.shape |
-| Penguin overlap | Client | Minor | ⚠️ Unfixed | TBD |
+| Penguin visual size | Client | Major | ✅ Fixed | entity.cpp + config |
+| Camera distance | Client | Major | ✅ Fixed | mtp_target_default.cfg |
+| Camera zoom reset | Client | Minor | ✅ Fixed | mouse_listener.cpp |
 | Keyboard controls | Client | Critical | ✅ Fixed | chat_task.cpp/h |
 | Missing drivers | Client | Critical | ✅ Fixed | Post-build script |
 | Missing fonts | Client | Critical | ✅ Fixed | Post-build script |
@@ -303,24 +382,34 @@ The script automatically:
 
 ## Known Issues (Remaining)
 
-### Penguin Size/Overlap
-- **Impact:** Visual only, doesn't prevent gameplay
+### Scoring System Broken
+- **Impact:** CRITICAL - Game unplayable without scoring
+- **Symptom:** Landing on platforms awards no points to scoreboard
+- **Status:** Under investigation
 - **Next Steps:**
-  - Compare model files with working version
-  - Review entity scale settings in code
-  - Check camera distance settings
+  - Search for scoring logic in server code
+  - Check collision detection and scoring triggers
+  - Verify score network sync to client
+  - Test if scoring requires velocity threshold
 
 ### Water Rendering Disabled
-- **Impact:** Missing visual element
+- **Impact:** Missing visual element, player experience lacking
+- **Status:** DisplayWater = 0 (disabled)
+- **Advanced Mode (DisplayWater = 2):** Crashes with null pointer in WaterPoolManager
+- **Basic Mode (DisplayWater = 1):** Shows wrong texture (pixelated arrow)
 - **Next Steps:**
+  - Fix WaterPoolManager initialization for advanced mode
+  - Find or create correct water_light.shape for basic mode
   - Search for original water texture files
-  - Or create compatible replacement textures
-  - Test with water rendering re-enabled
 
-### Level Transition Stability
-- **Impact:** Some level transitions may crash
-- **Status:** Partially fixed, monitoring for issues
-- **Next Steps:** Test all 69 levels
+### Physics Tuning
+- **Impact:** Gameplay balance issues
+- **Symptom:** Can't find friction value that allows both speed and stopping on targets
+- **Status:** Under investigation
+- **Current:** Accel=0.0001f (enables steering), Friction=0.5f (testing)
+- **Next Steps:**
+  - Determine correct default values from original game
+  - Test if targets need special friction override
 
 ---
 
@@ -352,6 +441,7 @@ The script automatically:
 
 ---
 
-**Last Updated:** December 25, 2024
+**Last Updated:** December 27, 2025 (Session 6)
 **Tested With:** Version 1.2.2a (client and server)
 **Platform:** Windows 11, Visual Studio 2022 Build Tools
+**Game Status:** Server stable through all 71 levels, camera/controls perfect, scoring still broken
