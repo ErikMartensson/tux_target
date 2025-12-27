@@ -104,8 +104,19 @@ if exist "%PROJECT_DIR%\data\level" (
 )
 echo.
 
-REM 6. Copy corrected skybox
-echo 6. Copying corrected skybox...
+REM 6. Copy Lua server scripts (with Lua 5.x compatibility fixes)
+echo 6. Copying Lua server scripts...
+if exist "%PROJECT_DIR%\mtp-target-src\data\lua" (
+    copy /Y "%PROJECT_DIR%\mtp-target-src\data\lua\*.lua" "%RELEASE_DIR%\data\lua\" >nul 2>nul
+    for /f %%a in ('dir /b "%RELEASE_DIR%\data\lua\*_server.lua" 2^>nul ^| find /c /v ""') do set LUA_COUNT=%%a
+    echo    - Copied %LUA_COUNT% Lua server scripts (with Lua 5.x fixes)
+) else (
+    echo    ! Warning: Lua server scripts not found
+)
+echo.
+
+REM 7. Copy corrected skybox
+echo 7. Copying corrected skybox...
 if exist "%PROJECT_DIR%\data\shape\sky.shape" (
     copy /Y "%PROJECT_DIR%\data\shape\sky.shape" "%RELEASE_DIR%\data\shape\" >nul
     echo    - Copied: sky.shape (snow variant)
@@ -114,8 +125,8 @@ if exist "%PROJECT_DIR%\data\shape\sky.shape" (
 )
 echo.
 
-REM 7. Verify executables
-echo 7. Verifying executables...
+REM 8. Verify executables
+echo 8. Verifying executables...
 if exist "%RELEASE_DIR%\tux-target.exe" (
     echo    - Client: tux-target.exe
 ) else (

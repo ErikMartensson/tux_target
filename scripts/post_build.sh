@@ -127,8 +127,19 @@ else
 fi
 echo ""
 
-# 6. Copy corrected skybox (snow variant)
-echo "6. Copying corrected skybox..."
+# 6. Copy Lua server scripts (with Lua 5.x compatibility fixes)
+echo "6. Copying Lua server scripts..."
+if [ -d "${PROJECT_DIR}/mtp-target-src/data/lua" ]; then
+    cp -r "${PROJECT_DIR}/mtp-target-src/data/lua"/*.lua "${RELEASE_DIR}/data/lua/" 2>/dev/null
+    LUA_COUNT=$(find "${RELEASE_DIR}/data/lua" -name "*_server.lua" 2>/dev/null | wc -l)
+    echo -e "${GREEN}✓ Copied ${LUA_COUNT} Lua server scripts (with Lua 5.x fixes)${NC}"
+else
+    echo -e "${YELLOW}⚠ Lua server scripts not found in ${PROJECT_DIR}/mtp-target-src/data/lua${NC}"
+fi
+echo ""
+
+# 7. Copy corrected skybox (snow variant)
+echo "7. Copying corrected skybox..."
 if [ -f "${PROJECT_DIR}/data/shape/sky.shape" ]; then
     copy_file "${PROJECT_DIR}/data/shape/sky.shape" \
               "${RELEASE_DIR}/data/shape/sky.shape"
@@ -137,8 +148,8 @@ else
 fi
 echo ""
 
-# 7. Verify executables
-echo "7. Verifying executables..."
+# 8. Verify executables
+echo "8. Verifying executables..."
 if [ -f "${RELEASE_DIR}/tux-target.exe" ]; then
     CLIENT_SIZE=$(stat -f%z "${RELEASE_DIR}/tux-target.exe" 2>/dev/null || stat -c%s "${RELEASE_DIR}/tux-target.exe" 2>/dev/null)
     echo -e "${GREEN}✓ Client: tux-target.exe ($(numfmt --to=iec ${CLIENT_SIZE} 2>/dev/null || echo ${CLIENT_SIZE} bytes))${NC}"
@@ -154,7 +165,7 @@ else
 fi
 echo ""
 
-# 7. Summary
+# 9. Summary
 echo "========================================="
 echo "Post-Build Setup Complete!"
 echo "========================================="
