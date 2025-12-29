@@ -71,6 +71,23 @@ public:
 	std::string updateStats(const std::string &name, sint32 score, float time, bool &breakTime);
 	
 	void forceMap(const std::string &mapName);
+
+	// Result codes for findAndForceMap
+	enum EForceMapResult {
+		ForceMapOk,          // Level found and valid
+		ForceMapNotFound,    // No matching level file found
+		ForceMapInvalid      // Level found but invalid (e.g., wrong ReleaseLevel)
+	};
+
+	// Find a level matching mapName and validate it without fully loading
+	// Returns result code and fills in levelName, fileName, and invalidReason
+	// If setPreference is true (default), also sets the preferred map for next level
+	EForceMapResult findAndForceMap(const std::string &mapName,
+	                                std::string &levelName,
+	                                std::string &fileName,
+	                                std::string &invalidReason,
+	                                bool setPreference = true);
+
 private:
 
 	uint8						NextLevelId;

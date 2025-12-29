@@ -25,7 +25,15 @@
 
 #include "stdpch.h"
 
+extern "C"
+{
+#include <lua.h>
+#include <lualib.h>
+#include <lauxlib.h>
+};
+
 #include <nel/misc/path.h>
+#include <nel/misc/file.h>
 #include <nel/net/service.h>
 
 #include "bot.h"
@@ -39,6 +47,7 @@
 #include "level_manager.h"
 #include "entity_manager.h"
 #include "../../common/net_message.h"
+#include "../../common/lua_utility.h"
 
 
 //
@@ -359,6 +368,116 @@ void  CLevelManager::maxLevelSessionCount(uint32 levelCount)
 void CLevelManager::forceMap(const std::string &mapName)
 {
 	preferedMap = mapName;
+}
+
+CLevelManager::EForceMapResult CLevelManager::findAndForceMap(
+	const std::string &mapName,
+	std::string &levelName,
+	std::string &fileName,
+	std::string &invalidReason,
+	bool setPreference)
+{
+	// Get all level files
+	vector<string> files;
+	CPath::getPathContent("data/level", true, false, true, files);
+
+	// Find matching level file
+	string matchedFile;
+	for(uint i = 0; i < files.size(); i++)
+	{
+		if(files[i].find(".lua") == files[i].size() - 4)
+		{
+			if(files[i].find(mapName) != string::npos)
+			{
+				matchedFile = files[i];
+				break;
+			}
+		}
+	}
+
+	if(matchedFile.empty())
+	{
+		return ForceMapNotFound;
+	}
+
+	// Extract just the filename for display
+	fileName = CFile::getFilename(matchedFile);
+
+	// Do a lightweight Lua load to get Name and ReleaseLevel
+	lua_State *L = luaOpen();
+	if(!L)
+	{
+		invalidReason = "Failed to create Lua state";
+		return ForceMapInvalid;
+	}
+
+	string fullPath = CPath::lookup(matchedFile, false);
+	if(fullPath.empty())
+	{
+		luaClose(L);
+		invalidReason = "File not found in path";
+		return ForceMapInvalid;
+	}
+
+	int res = luaL_dofile(L, fullPath.c_str());
+	if(res != 0)
+	{
+		const char *msg = lua_tostring(L, -1);
+		if(msg)
+			invalidReason = string("Lua error: ") + msg;
+		else
+			invalidReason = "Lua syntax error";
+		luaClose(L);
+		return ForceMapInvalid;
+	}
+
+	// Get the Name variable
+	lua_getglobal(L, "Name");
+	if(lua_isstring(L, -1))
+		levelName = lua_tostring(L, -1);
+	else
+		levelName = "Unknown";
+	lua_pop(L, 1);
+
+	// Get the ReleaseLevel variable
+	float releaseLevel = 1;
+	lua_getglobal(L, "ReleaseLevel");
+	if(lua_isnumber(L, -1))
+		releaseLevel = (float)lua_tonumber(L, -1);
+	lua_pop(L, 1);
+
+	luaClose(L);
+
+	// Check ReleaseLevel against config
+	CConfigFile::CVar &configReleaseLevel = IService::getInstance()->ConfigFile.getVar("ReleaseLevel");
+	bool releaseLevelOk = false;
+
+	if(configReleaseLevel.size() == 0)
+	{
+		releaseLevelOk = true;
+	}
+	else
+	{
+		for(uint i = 0; i < (uint)configReleaseLevel.size(); i++)
+		{
+			if((int)releaseLevel == configReleaseLevel.asInt(i))
+			{
+				releaseLevelOk = true;
+				break;
+			}
+		}
+	}
+
+	if(!releaseLevelOk)
+	{
+		invalidReason = toString("ReleaseLevel %d not in allowed list", (int)releaseLevel);
+		return ForceMapInvalid;
+	}
+
+	// All checks passed - set the preferred map if requested
+	if(setPreference)
+		preferedMap = mapName;
+	return ForceMapOk;
 }
 
 

@@ -103,22 +103,30 @@ static void cbCommand(CClient *c, CNetMessage &msgin)
 	}
 
 
-	if(cmd.size() >= 8 && cmd.substr(0,8)=="votemap ")
+	if((cmd.size() >= 8 && cmd.substr(0,8)=="votemap ") ||
+	   (cmd.size() >= 2 && cmd.substr(0,2)=="v "))
 	{
-		string arg = cmd.substr(8);
+		string arg = (cmd[0] == 'v' && cmd[1] == ' ') ? cmd.substr(2) : cmd.substr(8);
 		if(!arg.empty())
 		{
-			c->voteMap(arg);
-			CNetwork::getInstance().sendChat(c->id(), "Vote registered for: " + arg);
-		}
-	}
-	else if(cmd.size() >= 2 && cmd.substr(0,2)=="v ")
-	{
-		string arg = cmd.substr(2);
-		if(!arg.empty())
-		{
-			c->voteMap(arg);
-			CNetwork::getInstance().sendChat(c->id(), "Vote registered for: " + arg);
+			// Validate the level and give feedback
+			string levelName, fileName, invalidReason;
+			CLevelManager::EForceMapResult result =
+				CLevelManager::getInstance().findAndForceMap(arg, levelName, fileName, invalidReason, false);
+
+			switch(result)
+			{
+			case CLevelManager::ForceMapOk:
+				c->voteMap(arg);
+				CNetwork::getInstance().sendChat(c->id(), "Vote registered: " + levelName + " (" + fileName + ")");
+				break;
+			case CLevelManager::ForceMapNotFound:
+				CNetwork::getInstance().sendChat(c->id(), "No level found matching '" + arg + "'");
+				break;
+			case CLevelManager::ForceMapInvalid:
+				CNetwork::getInstance().sendChat(c->id(), "Level " + fileName + " is invalid: " + invalidReason);
+				break;
+			}
 		}
 	}
 	else if(cmd.size() >= 8 && cmd.substr(0,8)=="petition")
@@ -135,8 +143,22 @@ static void cbCommand(CClient *c, CNetMessage &msgin)
 			string arg = cmd.substr(9);
 			if(!arg.empty())
 			{
-				CLevelManager::getInstance().forceMap(arg);
-				CNetwork::getInstance().sendChat("Next level forced to: " + arg);
+				string levelName, fileName, invalidReason;
+				CLevelManager::EForceMapResult result =
+					CLevelManager::getInstance().findAndForceMap(arg, levelName, fileName, invalidReason);
+
+				switch(result)
+				{
+				case CLevelManager::ForceMapOk:
+					CNetwork::getInstance().sendChat("Next level: " + levelName + " (" + fileName + ")");
+					break;
+				case CLevelManager::ForceMapNotFound:
+					CNetwork::getInstance().sendChat(c->id(), "No level found matching '" + arg + "'");
+					break;
+				case CLevelManager::ForceMapInvalid:
+					CNetwork::getInstance().sendChat(c->id(), "Level " + fileName + " is invalid: " + invalidReason);
+					break;
+				}
 			}
 			else
 			{

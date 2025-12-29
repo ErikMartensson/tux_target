@@ -8,9 +8,9 @@ This document lists all available levels, their scoring mechanics, and server sc
 
 | Command | Description |
 |---------|-------------|
-| `/v <name>` | Vote for a level (shortcut) |
-| `/votemap <name>` | Vote for a level |
-| `/forcemap <name>` | Force next level (admin) |
+| `/v <name>` | Vote for a level - shows immediate feedback |
+| `/votemap <name>` | Vote for a level - shows immediate feedback |
+| `/forcemap <name>` | Force next level (admin) - shows immediate feedback |
 | `/forceend` | End current session (admin) |
 | `/help` | Show available commands |
 
@@ -20,6 +20,18 @@ This document lists all available levels, their scoring mechanics, and server sc
 - Use unique substrings to avoid matching multiple levels
 - Vote requires enough players to agree (1/3 + 1 of human players)
 - Admin commands work immediately (everyone is admin by default in local play)
+
+### Level Command Feedback
+
+Both `/v` (vote) and `/forcemap` validate levels immediately and show feedback:
+
+| Situation | Response |
+|-----------|----------|
+| Level found and valid | `Vote registered: Arena (level_arena.lua)` or `Next level: Arena (level_arena.lua)` |
+| No matching level | `No level found matching 'xyz'` |
+| Level invalid (e.g., wrong ReleaseLevel) | `Level level_xyz.lua is invalid: ReleaseLevel 0 not in allowed list` |
+
+**Note:** Votes are only registered if the level is valid. Invalid votes are rejected with an error message.
 
 ---
 
