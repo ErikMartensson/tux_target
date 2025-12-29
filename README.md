@@ -6,7 +6,7 @@
 
 > A free multiplayer online action game where you roll down a giant ramp and delicately land on platforms to score points. Fight with and against players in this mix of action, dexterity, and strategy - inspired by Monkey Target from Super Monkey Ball.
 
-**Status:** ⚠️ Work in Progress - Version 1.2.2a client and server compile and run, but with significant bugs
+**Status:** ✅ Playable - Version 1.2.2a client and server working in LAN mode with scoring and physics
 
 ---
 
@@ -65,14 +65,12 @@ The original v1.5.19 server source is unavailable, so we're starting with the v1
 
 ### Known Issues ⚠️
 
-**Critical Gameplay Bugs:**
-- ⚠️ **Scoring system broken** - Landing on platforms doesn't award points
-- ⚠️ **Water rendering disabled** - Missing texture files cause crash (DisplayWater = 0 workaround)
-
 **Visual/Polish Issues:**
+- ⚠️ **Water rendering disabled** - Missing texture files cause crash (DisplayWater = 0 workaround)
 - ⚠️ **Limited to v1.2.2a features** - Some v1.5.19 improvements not yet ported
+- ⚠️ **9 level scripts need conversion** - Some special game modes don't work yet
 
-**This project is a work in progress.** The game runs and you can play through multiple levels, but scoring doesn't work yet.
+**The game is fully playable!** Scoring, friction, and bot AI all work correctly.
 
 See [docs/RUNTIME_FIXES.md](docs/RUNTIME_FIXES.md) for detailed issue documentation.
 
@@ -134,6 +132,17 @@ cd build/bin/Release
 - **Enter:** Open chat (press again to send)
 - **Escape:** Cancel chat
 
+**Chat Commands:**
+
+| Command | Description |
+|---------|-------------|
+| `/help` | Show available commands |
+| `/v <name>` | Vote for a level (e.g., `/v arena`) |
+| `/forcemap <name>` | Force next level (admin) |
+| `/forceend` | End current session (admin) |
+
+See **[docs/LEVELS.md](docs/LEVELS.md)** for the complete level list and map names.
+
 For detailed build instructions and troubleshooting, see **[docs/BUILDING.md](docs/BUILDING.md)** and **[docs/RUNTIME_FIXES.md](docs/RUNTIME_FIXES.md)**.
 
 ---
@@ -144,6 +153,7 @@ For detailed build instructions and troubleshooting, see **[docs/BUILDING.md](do
 |----------|-------------|
 | [**BUILDING.md**](docs/BUILDING.md) | Complete build guide for Windows (NeL, ODE, client, server) |
 | [**RUNTIME_FIXES.md**](docs/RUNTIME_FIXES.md) | Runtime crashes and fixes (water, levels, controls, files) |
+| [**LEVELS.md**](docs/LEVELS.md) | Level list and chat commands for voting/forcing maps |
 | [**MODIFICATIONS.md**](docs/MODIFICATIONS.md) | Source code changes for modern compatibility |
 | [**PROTOCOL_NOTES.md**](docs/PROTOCOL_NOTES.md) | NeL network protocol technical reference |
 | [**scripts/post_build.sh**](scripts/post_build.sh) | Automated post-build file copy script |
@@ -268,18 +278,19 @@ We'd love your help! This is a community effort to preserve a fun open-source ga
 
 ## Known Issues
 
-### Critical Gameplay Bugs
-- **Scoring system broken** - Landing on platforms doesn't award points to scoreboard
+### Visual/Polish Issues
 - **Water rendering disabled** - Missing texture files (water_env.tga, water_disp.tga) cause client crash
   - Workaround: `DisplayWater = 0` in config
-
-### Other Issues
 - **Limited to v1.2.2a features** - Some improvements from v1.5.19 not yet ported
+- **9 level scripts need API conversion** - Some special game modes (darts, gates, bowls) don't work yet
 
 ### Fixed Issues ✅
 - ✅ Build system - Full Windows compilation working
 - ✅ Client/server crashes - Major crashes resolved
+- ✅ **Scoring system** - Players and bots score correctly on landing platforms
+- ✅ **Friction system** - Penguins slow down properly on target platforms
 - ✅ **Server level transition crashes** - Lua 5.x compatibility fixes applied
+- ✅ **Chat commands** - Vote and admin commands work with feedback
 - ✅ Keyboard controls - Arrow keys work for steering, chat toggle working
 - ✅ Physics steering - Entity acceleration and module override fixed
 - ✅ Penguin visual size - Mesh scaling applied (was too large)

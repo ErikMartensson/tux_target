@@ -127,12 +127,16 @@ else
 fi
 echo ""
 
-# 6. Copy Lua server scripts (with Lua 5.x compatibility fixes)
+# 6. Copy Lua server scripts (converted to v1.2.2a API)
+# These scripts have been fixed for v1.2.2a compatibility:
+# - Removed nlinfo() calls (not registered in v1.2.2a)
+# - Use global entitySceneCollideEvent() instead of CEntity:collideWithModule()
+# - Use v1.2.2a method names (getName, getScore, getIsOpen, etc.)
 echo "6. Copying Lua server scripts..."
 if [ -d "${PROJECT_DIR}/mtp-target-src/data/lua" ]; then
     cp -r "${PROJECT_DIR}/mtp-target-src/data/lua"/*.lua "${RELEASE_DIR}/data/lua/" 2>/dev/null
     LUA_COUNT=$(find "${RELEASE_DIR}/data/lua" -name "*_server.lua" 2>/dev/null | wc -l)
-    echo -e "${GREEN}✓ Copied ${LUA_COUNT} Lua server scripts (with Lua 5.x fixes)${NC}"
+    echo -e "${GREEN}✓ Copied ${LUA_COUNT} Lua server scripts (v1.2.2a API)${NC}"
 else
     echo -e "${YELLOW}⚠ Lua server scripts not found in ${PROJECT_DIR}/mtp-target-src/data/lua${NC}"
 fi

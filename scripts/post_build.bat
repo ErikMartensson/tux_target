@@ -104,12 +104,16 @@ if exist "%PROJECT_DIR%\data\level" (
 )
 echo.
 
-REM 6. Copy Lua server scripts (with Lua 5.x compatibility fixes)
+REM 6. Copy Lua server scripts (converted to v1.2.2a API)
+REM These scripts have been fixed for v1.2.2a compatibility:
+REM - Removed nlinfo() calls (not registered in v1.2.2a)
+REM - Use global entitySceneCollideEvent() instead of CEntity:collideWithModule()
+REM - Use v1.2.2a method names (getName, getScore, getIsOpen, etc.)
 echo 6. Copying Lua server scripts...
 if exist "%PROJECT_DIR%\mtp-target-src\data\lua" (
     copy /Y "%PROJECT_DIR%\mtp-target-src\data\lua\*.lua" "%RELEASE_DIR%\data\lua\" >nul 2>nul
     for /f %%a in ('dir /b "%RELEASE_DIR%\data\lua\*_server.lua" 2^>nul ^| find /c /v ""') do set LUA_COUNT=%%a
-    echo    - Copied %LUA_COUNT% Lua server scripts (with Lua 5.x fixes)
+    echo    - Copied %LUA_COUNT% Lua server scripts (v1.2.2a API)
 ) else (
     echo    ! Warning: Lua server scripts not found
 )
