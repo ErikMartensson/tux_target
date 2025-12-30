@@ -6,7 +6,7 @@
 
 > A free multiplayer online action game where you roll down a giant ramp and delicately land on platforms to score points. Fight with and against players in this mix of action, dexterity, and strategy - inspired by Monkey Target from Super Monkey Ball.
 
-**Status:** ✅ Playable - Version 1.2.2a client and server working in LAN mode with scoring and physics
+**Status:** 🚧 Work in Progress - Version 1.2.2a client and server working with 7 of 71 maps
 
 ---
 
@@ -54,25 +54,37 @@ The original v1.5.19 server source is unavailable, so we're starting with the v1
 
 ### What Works ✅
 
-- ✅ **Build System:** Full Windows build with Visual Studio 2022 working
-- ✅ **Game Server:** Compiles and runs on Windows, 71 levels loaded
+- ✅ **Build System:** Full Windows build with Visual Studio 2022 and automated scripts
+- ✅ **Game Server:** Compiles and runs on Windows, 7 compatible levels working
 - ✅ **Game Client:** Compiles and runs on Windows with OpenGL/OpenAL drivers
-- ✅ **Login Service:** Modern TypeScript implementation handles authentication
+- ✅ **Login Service:** Modern TypeScript/Deno implementation handles authentication
 - ✅ **Database:** SQLite-based user and shard management
-- ✅ **Physics:** ODE 0.16.5 engine with Lua 5.x scripting (mostly working)
+- ✅ **Physics:** ODE 0.16.5 engine with Lua 5.x scripting
 - ✅ **Network:** Full protocol working (VLP login + game server connection)
-- ✅ **Basic Controls:** Keyboard input (arrow keys, Ctrl, Enter for chat)
+- ✅ **Controls:** Arrow keys for steering, Ctrl for ball/glide toggle, Enter for chat
+- ✅ **Scoring:** Full scoring system with targets and friction
+- ⚠️ **Bots:** AI bots present but not working correctly on all maps
+- ✅ **Game Assets:** All textures, shapes, sounds included in repository
 
 ### Known Issues ⚠️
 
-**Visual/Polish Issues:**
-- ⚠️ **Water rendering disabled** - Missing texture files cause crash (DisplayWater = 0 workaround)
-- ⚠️ **Limited to v1.2.2a features** - Some v1.5.19 improvements not yet ported
-- ⚠️ **9 level scripts need conversion** - Some special game modes don't work yet
+See [docs/KNOWN_ISSUES.md](docs/KNOWN_ISSUES.md) for the complete issue tracker.
 
-**The game is fully playable!** Scoring, friction, and bot AI all work correctly.
+**High Priority:**
+- ⚠️ **64 maps unavailable** - Require v1.5.19 Lua API (compatibility layer needed)
+- ⚠️ **Bot AI issues** - Not working correctly on all maps
 
-See [docs/RUNTIME_FIXES.md](docs/RUNTIME_FIXES.md) for detailed issue documentation.
+**Medium Priority:**
+- ⚠️ **High ping on localhost** - 15-17ms instead of near-zero
+- ⚠️ **Input delay** - Noticeable lag between steering input and penguin response
+- ⚠️ **Momentum loss** - Occasionally stops at ramp transitions
+
+**Low Priority:**
+- ⚠️ **Water rendering disabled** - Falls back gracefully when textures missing
+
+**The game is playable!** Core mechanics work, but many maps and features still need fixes.
+
+See [docs/RUNTIME_FIXES.md](docs/RUNTIME_FIXES.md) for detailed fix documentation.
 
 ---
 
@@ -96,18 +108,13 @@ See **[docs/BUILDING.md](docs/BUILDING.md)** for complete instructions on buildi
 
 ```bash
 cd tux_target
-mkdir build && cd build
 
-# Configure
-cmake .. -DBUILD_CLIENT=ON -DBUILD_SERVER=ON \
-  -DWITH_STATIC=ON -DWITH_STATIC_LIBXML2=ON -DWITH_STATIC_CURL=ON
+# Build client and server (includes post-build file copying)
+./scripts/build-client.sh   # or scripts\build-client.bat on Windows
+./scripts/build-server.sh   # or scripts\build-server.bat on Windows
 
-# Build
-cmake --build . --config Release -j 24
-
-# Run post-build setup
-cd ..
-./scripts/post_build.sh  # or scripts\post_build.bat on Windows
+# Or build both at once
+./scripts/build-all.sh      # or scripts\build-all.bat on Windows
 ```
 
 ### 3. Start Services
@@ -153,10 +160,11 @@ For detailed build instructions and troubleshooting, see **[docs/BUILDING.md](do
 |----------|-------------|
 | [**BUILDING.md**](docs/BUILDING.md) | Complete build guide for Windows (NeL, ODE, client, server) |
 | [**RUNTIME_FIXES.md**](docs/RUNTIME_FIXES.md) | Runtime crashes and fixes (water, levels, controls, files) |
+| [**KNOWN_ISSUES.md**](docs/KNOWN_ISSUES.md) | Issue tracker with planned fixes and priorities |
 | [**LEVELS.md**](docs/LEVELS.md) | Level list and chat commands for voting/forcing maps |
 | [**MODIFICATIONS.md**](docs/MODIFICATIONS.md) | Source code changes for modern compatibility |
 | [**PROTOCOL_NOTES.md**](docs/PROTOCOL_NOTES.md) | NeL network protocol technical reference |
-| [**scripts/post_build.sh**](scripts/post_build.sh) | Automated post-build file copy script |
+| [**scripts/post-build.sh**](scripts/post-build.sh) | Automated post-build file copy script |
 | [**docs/archive/**](docs/archive/) | Historical development notes (reference only) |
 
 ---
@@ -278,29 +286,33 @@ We'd love your help! This is a community effort to preserve a fun open-source ga
 
 ## Known Issues
 
-### Visual/Polish Issues
-- **Water rendering disabled** - Missing texture files (water_env.tga, water_disp.tga) cause client crash
-  - Workaround: `DisplayWater = 0` in config
-- **Limited to v1.2.2a features** - Some improvements from v1.5.19 not yet ported
-- **9 level scripts need API conversion** - Some special game modes (darts, gates, bowls) don't work yet
+See [docs/KNOWN_ISSUES.md](docs/KNOWN_ISSUES.md) for the complete issue tracker.
+
+### Open Issues
+- **64 maps unavailable** - Require v1.5.19 Lua API compatibility layer
+- **Bot AI broken** - Not deploying correctly on all maps
+- **High ping on localhost** - 15-17ms instead of near-zero
+- **Input delay** - Noticeable lag between steering and response
+- **Momentum loss** - Occasionally stops at ramp transitions
+- **Darts map spawn position** - Players spawn too far back (needs testing)
+- **Water rendering disabled** - Falls back gracefully when textures missing
 
 ### Fixed Issues ✅
-- ✅ Build system - Full Windows compilation working
+- ✅ Build system - Full Windows compilation with automated scripts
 - ✅ Client/server crashes - Major crashes resolved
-- ✅ **Scoring system** - Players and bots score correctly on landing platforms
-- ✅ **Friction system** - Penguins slow down properly on target platforms
-- ✅ **Server level transition crashes** - Lua 5.x compatibility fixes applied
-- ✅ **Chat commands** - Vote and admin commands work with feedback
+- ✅ Scoring system - Players score correctly on landing platforms
+- ✅ Friction system - Penguins slow down properly on target platforms
+- ✅ Server level transition crashes - Lua 5.x compatibility fixes applied
+- ✅ Chat commands - Vote and admin commands work with feedback
 - ✅ Keyboard controls - Arrow keys work for steering, chat toggle working
 - ✅ Physics steering - Entity acceleration and module override fixed
-- ✅ Penguin visual size - Mesh scaling applied (was too large)
-- ✅ Camera controls - Zoom persists on mouse drag, defaults to good view
-- ✅ FreezeCommand bug - Entities properly unfrozen on game start
-- ✅ Level loading - All 71 levels load correctly
-- ✅ Skybox rendering - Correct antarctic theme displays
+- ✅ Penguin visual size - Mesh scaling matches collision sphere
+- ✅ Camera controls - Zoom persists on mouse drag
+- ✅ Level loading - 7 compatible levels load correctly
+- ✅ Game assets - All textures, shapes, sounds consolidated in repo
 - ✅ Network protocol - Full compatibility achieved
 
-See [docs/RUNTIME_FIXES.md](docs/RUNTIME_FIXES.md) for complete issue history and [Issues](../../issues) for bug tracker.
+See [docs/RUNTIME_FIXES.md](docs/RUNTIME_FIXES.md) for fix documentation.
 
 ---
 
