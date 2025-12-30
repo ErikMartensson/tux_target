@@ -1,0 +1,295 @@
+name: Build
+
+on:
+  push:
+    branches: [frankensteins-monster, master]
+  pull_request:
+    branches: [frankensteins-monster, master]
+  workflow_dispatch:
+    inputs:
+      build_type:
+        description: 'Build configuration'
+        required: false
+        default: 'Release'
+        type: choice
+        options:
+          - Release
+          - Debug
+
+env:
+  BUILD_TYPE: ${{ inputs.build_type || 'Release' }}
+  # Enable vcpkg binary caching
+  VCPKG_BINARY_SOURCES: "clear;x-gha,readwrite"
+
+jobs:
+  # ============================================
+  # Build Dependencies (cached)
+  # ============================================
+  build-deps:
+    name: Build Dependencies
+    runs-on: windows-2022
+    outputs:
+      deps-cache-hit: ${{ steps.cache-deps.outputs.cache-hit }}
+      ryzomcore-cache-hit: ${{ steps.cache-ryzomcore.outputs.cache-hit }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup MSVC
+        uses: ilammy/msvc-dev-cmd@v1
+        with:
+          arch: x64
+
+      # Cache RyzomCore (NeL libraries)
+      - name: Cache RyzomCore
+        id: cache-ryzomcore
+        uses: actions/cache@v4
+        with:
+          path: C:/ryzomcore
+          key: ryzomcore-windows-${{ hashFiles('CMakeLists.txt') }}-v2
+          restore-keys: |
+            ryzomcore-windows-
+
+      - name: Build RyzomCore
+        if: steps.cache-ryzomcore.outputs.cache-hit != 'true'
+        shell: pwsh
+        run: |
+          Write-Host "Cloning RyzomCore..."
+          git clone --depth 1 https://github.com/ryzom/ryzomcore.git C:/ryzomcore
+
+          Write-Host "Configuring RyzomCore..."
+          cd C:/ryzomcore
+          mkdir build
+          cd build
+
+          cmake .. -G "Visual Studio 17 2022" -A x64 `
+            -DWITH_SOUND=ON `
+            -DWITH_NEL=ON `
+            -DWITH_NEL_TOOLS=OFF `
+            -DWITH_RYZOM=OFF `
+            -DWITH_RYZOM_CLIENT=OFF `
+            -DWITH_RYZOM_SERVER=OFF `
+            -DWITH_RYZOM_TOOLS=OFF `
+            -DWITH_NELNS=OFF `
+            -DWITH_SNOWBALLS=OFF `
+            -DWITH_STATIC=ON
+
+          Write-Host "Building RyzomCore..."
+          cmake --build . --config Release --parallel 4 --target nelmisc nelnet nel3d nelsound nelsnd_lowlevel nelgeorges nelligo
+          cmake --build . --config Release --parallel 2 --target nel_drv_opengl_win nel_drv_openal_win
+
+      # Cache third-party dependencies
+      - name: Cache Dependencies
+        id: cache-deps
+        uses: actions/cache@v4
+        with:
+          path: C:/tux_target_deps
+          key: tux-deps-windows-v3
+          restore-keys: |
+            tux-deps-windows-
+
+      - name: Build Dependencies
+        if: steps.cache-deps.outputs.cache-hit != 'true'
+        shell: pwsh
+        run: |
+          # This would contain scripts to build ODE, Lua, libxml2, etc.
+          # For now, we assume dependencies are provided or use vcpkg
+          Write-Host "Dependencies should be provided via cache or vcpkg"
+          Write-Host "See docs/BUILDING.md for dependency setup"
+
+          # Create directory structure if it doesn't exist
+          if (!(Test-Path "C:/tux_target_deps")) {
+            New-Item -ItemType Directory -Path "C:/tux_target_deps"
+          }
+
+  # ============================================
+  # Build Client
+  # ============================================
+  build-client:
+    name: Build Client
+    needs: build-deps
+    runs-on: windows-2022
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup MSVC
+        uses: ilammy/msvc-dev-cmd@v1
+        with:
+          arch: x64
+
+      - name: Restore RyzomCore Cache
+        uses: actions/cache/restore@v4
+        with:
+          path: C:/ryzomcore
+          key: ryzomcore-windows-${{ hashFiles('CMakeLists.txt') }}-v2
+          restore-keys: |
+            ryzomcore-windows-
+
+      - name: Restore Dependencies Cache
+        uses: actions/cache/restore@v4
+        with:
+          path: C:/tux_target_deps
+          key: tux-deps-windows-v3
+          restore-keys: |
+            tux-deps-windows-
+
+      - name: Configure CMake (Client)
+        run: |
+          mkdir build-client
+          cd build-client
+          cmake .. -G "Visual Studio 17 2022" -A x64 `
+            -DBUILD_CLIENT=ON `
+            -DBUILD_SERVER=OFF `
+            -DWITH_STATIC=ON `
+            -DWITH_STATIC_LIBXML2=ON `
+            -DWITH_STATIC_CURL=ON `
+            -DNEL_PREFIX_PATH=C:/ryzomcore/build
+
+      - name: Build Client
+        run: cmake --build build-client --config ${{ env.BUILD_TYPE }} --parallel 4
+
+      - name: Prepare Client Artifact
+        shell: pwsh
+        run: |
+          $releaseDir = "build-client/bin/${{ env.BUILD_TYPE }}"
+
+          # Copy NeL drivers if they exist
+          if (Test-Path "C:/ryzomcore/build/bin/Release/nel_drv_opengl_win_r.dll") {
+            Copy-Item "C:/ryzomcore/build/bin/Release/nel_drv_opengl_win_r.dll" "$releaseDir/"
+          }
+          if (Test-Path "C:/ryzomcore/build/bin/Release/nel_drv_openal_win_r.dll") {
+            Copy-Item "C:/ryzomcore/build/bin/Release/nel_drv_openal_win_r.dll" "$releaseDir/"
+          }
+
+          # Create data directories
+          New-Item -ItemType Directory -Force -Path "$releaseDir/data/font"
+          New-Item -ItemType Directory -Force -Path "$releaseDir/data/level"
+          New-Item -ItemType Directory -Force -Path "$releaseDir/logs"
+
+          # Copy level files
+          if (Test-Path "data/level") {
+            Copy-Item "data/level/*.lua" "$releaseDir/data/level/" -ErrorAction SilentlyContinue
+          }
+
+          # Copy config
+          if (Test-Path "data/config/mtp_target_default.cfg") {
+            Copy-Item "data/config/mtp_target_default.cfg" "$releaseDir/"
+          } elseif (Test-Path "client/mtp_target_default.cfg") {
+            Copy-Item "client/mtp_target_default.cfg" "$releaseDir/"
+          }
+
+      - name: Upload Client Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: tux-target-client-windows-${{ env.BUILD_TYPE }}
+          path: |
+            build-client/bin/${{ env.BUILD_TYPE }}/tux-target.exe
+            build-client/bin/${{ env.BUILD_TYPE }}/*.dll
+            build-client/bin/${{ env.BUILD_TYPE }}/data/
+            build-client/bin/${{ env.BUILD_TYPE }}/*.cfg
+          retention-days: 30
+
+  # ============================================
+  # Build Server
+  # ============================================
+  build-server:
+    name: Build Server
+    needs: build-deps
+    runs-on: windows-2022
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup MSVC
+        uses: ilammy/msvc-dev-cmd@v1
+        with:
+          arch: x64
+
+      - name: Restore RyzomCore Cache
+        uses: actions/cache/restore@v4
+        with:
+          path: C:/ryzomcore
+          key: ryzomcore-windows-${{ hashFiles('CMakeLists.txt') }}-v2
+          restore-keys: |
+            ryzomcore-windows-
+
+      - name: Restore Dependencies Cache
+        uses: actions/cache/restore@v4
+        with:
+          path: C:/tux_target_deps
+          key: tux-deps-windows-v3
+          restore-keys: |
+            tux-deps-windows-
+
+      - name: Configure CMake (Server)
+        run: |
+          mkdir build-server
+          cd build-server
+          cmake .. -G "Visual Studio 17 2022" -A x64 `
+            -DBUILD_CLIENT=OFF `
+            -DBUILD_SERVER=ON `
+            -DNEL_PREFIX_PATH=C:/ryzomcore/build
+
+      - name: Build Server
+        run: cmake --build build-server --config ${{ env.BUILD_TYPE }} --parallel 4
+
+      - name: Prepare Server Artifact
+        shell: pwsh
+        run: |
+          $releaseDir = "build-server/bin/${{ env.BUILD_TYPE }}"
+
+          # Create data directories
+          New-Item -ItemType Directory -Force -Path "$releaseDir/data/level"
+          New-Item -ItemType Directory -Force -Path "$releaseDir/data/lua"
+          New-Item -ItemType Directory -Force -Path "$releaseDir/logs"
+
+          # Copy level files
+          if (Test-Path "data/level") {
+            Copy-Item "data/level/*.lua" "$releaseDir/data/level/" -ErrorAction SilentlyContinue
+          }
+
+          # Copy Lua server scripts
+          if (Test-Path "mtp-target-src/data/lua") {
+            Copy-Item "mtp-target-src/data/lua/*.lua" "$releaseDir/data/lua/" -ErrorAction SilentlyContinue
+          }
+
+          # Copy config
+          if (Test-Path "server/mtp_target_service_default.cfg") {
+            Copy-Item "server/mtp_target_service_default.cfg" "$releaseDir/mtp_target_service.cfg"
+          }
+
+      - name: Upload Server Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: tux-target-server-windows-${{ env.BUILD_TYPE }}
+          path: |
+            build-server/bin/${{ env.BUILD_TYPE }}/tux-target-srv.exe
+            build-server/bin/${{ env.BUILD_TYPE }}/*.dll
+            build-server/bin/${{ env.BUILD_TYPE }}/data/
+            build-server/bin/${{ env.BUILD_TYPE }}/*.cfg
+          retention-days: 30
+
+  # ============================================
+  # Build Summary
+  # ============================================
+  build-summary:
+    name: Build Summary
+    needs: [build-client, build-server]
+    runs-on: ubuntu-latest
+    if: always()
+
+    steps:
+      - name: Check build results
+        run: |
+          echo "## Build Summary" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "| Component | Status |" >> $GITHUB_STEP_SUMMARY
+          echo "|-----------|--------|" >> $GITHUB_STEP_SUMMARY
+          echo "| Client | ${{ needs.build-client.result }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Server | ${{ needs.build-server.result }} |" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "Build type: **${{ env.BUILD_TYPE }}**" >> $GITHUB_STEP_SUMMARY

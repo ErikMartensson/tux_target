@@ -1,0 +1,127 @@
+{
+  "version": 6,
+  "cmakeMinimumRequired": {
+    "major": 3,
+    "minor": 21,
+    "patch": 0
+  },
+  "configurePresets": [
+    {
+      "name": "windows-base",
+      "hidden": true,
+      "generator": "Visual Studio 17 2022",
+      "architecture": "x64",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Release",
+        "WITH_STATIC": "ON",
+        "WITH_STATIC_LIBXML2": "ON",
+        "WITH_STATIC_CURL": "ON",
+        "NEL_PREFIX_PATH": "${env:NEL_PREFIX_PATH:C:/ryzomcore/build}",
+        "CMAKE_PREFIX_PATH": "${env:TUXDEPS_PREFIX_PATH:C:/tux_target_deps}"
+      },
+      "condition": {
+        "type": "equals",
+        "lhs": "${hostSystemName}",
+        "rhs": "Windows"
+      }
+    },
+    {
+      "name": "linux-base",
+      "hidden": true,
+      "generator": "Ninja",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Release"
+      },
+      "condition": {
+        "type": "equals",
+        "lhs": "${hostSystemName}",
+        "rhs": "Linux"
+      }
+    },
+    {
+      "name": "client",
+      "displayName": "Client Only",
+      "description": "Build game client only to build-client/",
+      "inherits": "windows-base",
+      "binaryDir": "${sourceDir}/build-client",
+      "cacheVariables": {
+        "BUILD_CLIENT": "ON",
+        "BUILD_SERVER": "OFF"
+      }
+    },
+    {
+      "name": "server",
+      "displayName": "Server Only",
+      "description": "Build game server only to build-server/",
+      "inherits": "windows-base",
+      "binaryDir": "${sourceDir}/build-server",
+      "cacheVariables": {
+        "BUILD_CLIENT": "OFF",
+        "BUILD_SERVER": "ON"
+      }
+    },
+    {
+      "name": "both",
+      "displayName": "Client and Server",
+      "description": "Build both client and server to build/",
+      "inherits": "windows-base",
+      "binaryDir": "${sourceDir}/build",
+      "cacheVariables": {
+        "BUILD_CLIENT": "ON",
+        "BUILD_SERVER": "ON"
+      }
+    },
+    {
+      "name": "client-linux",
+      "displayName": "Client Only (Linux)",
+      "description": "Build game client only on Linux",
+      "inherits": "linux-base",
+      "binaryDir": "${sourceDir}/build-client",
+      "cacheVariables": {
+        "BUILD_CLIENT": "ON",
+        "BUILD_SERVER": "OFF"
+      }
+    },
+    {
+      "name": "server-linux",
+      "displayName": "Server Only (Linux)",
+      "description": "Build game server only on Linux",
+      "inherits": "linux-base",
+      "binaryDir": "${sourceDir}/build-server",
+      "cacheVariables": {
+        "BUILD_CLIENT": "OFF",
+        "BUILD_SERVER": "ON"
+      }
+    }
+  ],
+  "buildPresets": [
+    {
+      "name": "client",
+      "displayName": "Build Client",
+      "configurePreset": "client",
+      "configuration": "Release"
+    },
+    {
+      "name": "server",
+      "displayName": "Build Server",
+      "configurePreset": "server",
+      "configuration": "Release"
+    },
+    {
+      "name": "both",
+      "displayName": "Build Both",
+      "configurePreset": "both",
+      "configuration": "Release"
+    },
+    {
+      "name": "client-linux",
+      "displayName": "Build Client (Linux)",
+      "configurePreset": "client-linux"
+    },
+    {
+      "name": "server-linux",
+      "displayName": "Build Server (Linux)",
+      "configurePreset": "server-linux"
+    }
+  ]
+}
