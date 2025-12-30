@@ -553,8 +553,10 @@ void initPhysics()
 	
 	{
 		CSynchronized<dSpaceID>::CAccessor acces(&Space);
-		acces.value() = dHashSpaceCreate(0);
+		// Use simple space instead of hash space to avoid AABB quantization issues
+		acces.value() = dSimpleSpaceCreate(0);
 		nlassert(acces.value());
+		nlinfo("Physics: Using simple collision space");
 	}
 	
 	ContactGroup = dJointGroupCreate(0);

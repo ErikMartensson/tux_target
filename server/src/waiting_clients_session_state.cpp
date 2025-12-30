@@ -79,7 +79,7 @@ void CWaitingClientsSessionState::update()
 			//dGeomSetPosition((*it)->Geom, StartX+2.5*i, StartY, StartZ);
 			//dBodySetPosition((*it)->Body, StartX+2.5*i, StartY, StartZ);
 			
-			CVector startPos;
+			CVector startPos(0.0f, 0.0f, 1.0f);  // Default safe position
 			CLevelManager::getInstance().currentLevel().nextStartingPoint(startPos, (*it)->StartingPointId);
 
 			//i = i % StartPointList.size();

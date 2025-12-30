@@ -282,8 +282,14 @@ void CLevel::update()
 
 void CLevel::nextStartingPoint(CVector &pos, uint8 &id)
 {
-	if(StartPoints.size()==0) return;
-	
+	if(StartPoints.size()==0)
+	{
+		nlwarning("No starting points defined in level, using default position (0, 0, 1)");
+		pos = CVector(0.0f, 0.0f, 1.0f);
+		id = 0;
+		return;
+	}
+
 	id = (NextStartingPoint++)%StartPoints.size();
 	pos = StartPoints[id]->position();
 }

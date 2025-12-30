@@ -116,6 +116,34 @@ static int mydefault_panic (lua_State *L) {
 	return 0;
 }
 
+static int lua_include(lua_State *L)
+{
+	const char *filename = lua_tostring(L, 1);
+	if (!filename)
+	{
+		nlwarning("LUA: include() called with no filename");
+		return 0;
+	}
+
+	string fn = CPath::lookup(filename, false);
+	if (fn.empty())
+	{
+		nlwarning("LUA: include() - file '%s' not found", filename);
+		return 0;
+	}
+
+	int res = luaL_dofile(L, fn.c_str());
+	if (res > 0)
+	{
+		const char *msg = lua_tostring(L, -1);
+		if (msg == NULL) msg = "(error with no message)";
+		nlwarning("LUA: include(\"%s\") failed with code %d: %s", filename, res, msg);
+		lua_pop(L, 1);  // pop error message
+	}
+
+	return 0;  // no return values
+}
+
 static int myTB = 0;
 
 int luaGetTB()
@@ -143,6 +171,7 @@ lua_State *luaOpen()
 	lua_register(L, "_TRACEBACK ", lua_ERRORMESSAGE);
 	lua_register(L, "_ERRORMESSAGE ", lua_ERRORMESSAGE);
 	lua_register(L, "exit", lua_exit);
+	lua_register(L, "include", lua_include);
 	lua_atpanic(L,mydefault_panic);
 
 	lua_settop(L, 0);
