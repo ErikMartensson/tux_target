@@ -4,236 +4,441 @@ This guide covers building the MTP Target game server and client from source on 
 
 ---
 
+## Table of Contents
+
+- [Quick Start (Windows)](#quick-start-windows)
+- [Prerequisites](#prerequisites)
+- [Build Scripts](#build-scripts)
+- [CMake Presets](#cmake-presets)
+- [Manual Build](#manual-build)
+- [Post-Build Setup](#post-build-setup)
+- [Running the Game](#running-the-game)
+- [GitHub Actions CI](#github-actions-ci)
+- [Troubleshooting](#troubleshooting)
+
+---
+
+## Quick Start (Windows)
+
+If you have all dependencies installed, use the build scripts:
+
+```bash
+# Build client only (to build-client/)
+./scripts/build-client.sh
+
+# Build server only (to build-server/)
+./scripts/build-server.sh
+
+# Build both
+./scripts/build-all.sh
+
+# Clean build
+./scripts/build-client.sh --clean
+```
+
+Or use CMake presets:
+
+```bash
+# Configure and build client
+cmake --preset client
+cmake --build --preset client
+
+# Configure and build server
+cmake --preset server
+cmake --build --preset server
+```
+
+---
+
 ## Prerequisites
 
-### Common Requirements (All Platforms)
-- C++ compiler (GCC 7+ or Visual Studio 2019+)
-- CMake 3.10+
-- Git
+### Windows
 
-### Platform-Specific Requirements
+**Required:**
+- Visual Studio 2022 with C++ Desktop Development workload
+- CMake 3.21+ (for CMake presets support)
+- Git for Windows / Git Bash
 
-#### Ubuntu/Linux (tested on Ubuntu 22.04/WSL2)
+**Dependencies (must be pre-built):**
+- NeL/RyzomCore libraries (`C:\ryzomcore`)
+- Third-party libs (`C:\tux_target_deps`):
+  - ODE 0.16.5 (physics engine)
+  - Lua 5.1
+  - libxml2
+  - libcurl
+  - OpenSSL
+  - FreeType, libjpeg, libpng
+  - libogg, libvorbis, OpenAL
+
+### Linux (Future)
+
 ```bash
 sudo apt update
 sudo apt install -y \
     build-essential cmake git ninja-build \
     libxml2-dev libfreetype6-dev libpng-dev libjpeg-dev \
     libgl1-mesa-dev libglu1-mesa-dev libxxf86vm-dev \
-    libxrandr-dev libxrender-dev libmysqlclient-dev \
+    libxrandr-dev libxrender-dev \
     lua5.1 liblua5.1-0-dev \
-    libcurl4-openssl-dev libluabind-dev \
-    libode-dev
+    libcurl4-openssl-dev libode-dev
 ```
-
-#### Windows (TODO - not yet tested)
-- Visual Studio 2019 or 2022 with C++ Desktop Development workload
-- Windows SDK
-- Git for Windows
-- Dependencies (pre-built or via vcpkg):
-  - NeL/RyzomCore libraries
-  - Lua 5.1
-  - ODE physics engine
-  - libxml2, freetype, etc.
 
 ---
 
-## Step 1: Build NeL Framework (RyzomCore)
+## Build Scripts
 
-The NeL (Nevrax Engine Library) framework is required for both the server and client.
+### Available Scripts
 
-### Ubuntu/Linux
+| Script | Purpose |
+|--------|---------|
+| `scripts/build-client.sh` | Build client to `build-client/` |
+| `scripts/build-server.sh` | Build server to `build-server/` |
+| `scripts/build-all.sh` | Build both client and server |
+| `scripts/post_build.sh` | Copy runtime files to build directory |
+| `scripts/run-client.sh` | Start client with log rotation |
+| `scripts/run-server.sh` | Start server with log rotation |
+
+Windows batch equivalents (`.bat`) are also provided.
+
+### Script Options
 
 ```bash
-# Clone RyzomCore (modern NeL fork)
-git clone https://github.com/ryzom/ryzomcore.git
-cd ryzomcore
+# Clean build (removes build directory first)
+./scripts/build-client.sh --clean
 
-# Create build directory
+# Skip post-build file copying
+./scripts/build-client.sh --skip-post-build
+
+# Both options
+./scripts/build-server.sh --clean --skip-post-build
+```
+
+### Post-Build Script Options
+
+```bash
+# Setup for client only
+./scripts/post_build.sh --client-only
+
+# Setup for server only
+./scripts/post_build.sh --server-only
+
+# Custom build directory
+./scripts/post_build.sh --build-dir /path/to/build/bin/Release
+
+# Combined
+./scripts/post_build.sh --client-only --build-dir ./my-client/Release
+```
+
+---
+
+## CMake Presets
+
+The project includes `CMakePresets.json` for easy builds:
+
+### Available Presets
+
+| Preset | Description | Output Directory |
+|--------|-------------|------------------|
+| `client` | Windows client only | `build-client/` |
+| `server` | Windows server only | `build-server/` |
+| `both` | Client and server | `build/` |
+| `client-linux` | Linux client only | `build-client/` |
+| `server-linux` | Linux server only | `build-server/` |
+
+### Usage
+
+```bash
+# Configure
+cmake --preset client
+
+# Build
+cmake --build --preset client
+
+# Or combined (configure if needed, then build)
+cmake --preset server && cmake --build --preset server
+```
+
+---
+
+## Manual Build
+
+If you prefer manual CMake commands:
+
+### Build Client Only
+
+```bash
+mkdir build-client && cd build-client
+
+cmake .. \
+    -G "Visual Studio 17 2022" \
+    -DBUILD_CLIENT=ON \
+    -DBUILD_SERVER=OFF \
+    -DWITH_STATIC=ON \
+    -DWITH_STATIC_LIBXML2=ON \
+    -DWITH_STATIC_CURL=ON
+
+cmake --build . --config Release -j8
+```
+
+### Build Server Only
+
+```bash
+mkdir build-server && cd build-server
+
+cmake .. \
+    -G "Visual Studio 17 2022" \
+    -DBUILD_CLIENT=OFF \
+    -DBUILD_SERVER=ON
+
+cmake --build . --config Release -j8
+```
+
+### Build Both (Legacy)
+
+```bash
 mkdir build && cd build
 
-# Configure (disable sound to avoid FMOD dependency)
-cmake -G Ninja \
-    -DCMAKE_BUILD_TYPE=Release \
-    -DWITH_SOUND=OFF \
-    ..
+cmake .. \
+    -G "Visual Studio 17 2022" \
+    -DBUILD_CLIENT=ON \
+    -DBUILD_SERVER=ON
 
-# Build (takes ~5-10 minutes)
-ninja
-
-# Libraries will be in: ryzomcore/build/lib/
-# Headers are in: ryzomcore/nel/include/
-```
-
-### Windows
-```powershell
-# TODO: Add Windows CMake build instructions
-# May need to use Visual Studio generator instead of Ninja
+cmake --build . --config Release -j8
 ```
 
 ---
 
-## Step 2: Build Game Server
+## Post-Build Setup
 
-### Ubuntu/Linux
+After building, runtime files must be copied to the build directory:
 
 ```bash
-cd tux_target  # or wherever you cloned this repo
+# Automatic (run from project root)
+./scripts/post_build.sh --client-only
+./scripts/post_build.sh --server-only
 
-# Update Makefiles with your RyzomCore paths
-# Edit Variables.mk if needed (should auto-detect)
-
-# Generate dependency files
-make -C server update
-
-# Build the server
-make -C server all
-
-# Binary will be: server/src/mtp_target_service
+# Or manually copy:
+# - NeL driver DLLs (nel_drv_opengl_win_r.dll, nel_drv_openal_win_r.dll)
+# - Font files to data/font/
+# - Level files to data/level/
+# - Server Lua scripts to data/lua/
+# - Config files
 ```
 
-**Running the server:**
-```bash
-cd server/src
+### Directory Structure After Build
 
-# Set NeL library path
-export LD_LIBRARY_PATH=/path/to/ryzomcore/build/lib:$LD_LIBRARY_PATH
-
-# Run server
-./mtp_target_service
-
-# Server will listen on port 51574 (Easy mode) and 51575 (Expert mode)
 ```
+build-client/bin/Release/
+├── tux-target.exe
+├── *.dll (runtime dependencies)
+├── data/
+│   ├── font/
+│   ├── gui/
+│   ├── level/
+│   └── shape/
+├── logs/
+├── cache/
+├── replay/
+└── mtp_target_default.cfg
 
-### Windows
-```powershell
-# TODO: Add Windows build instructions
-# Will likely use CMake + Visual Studio solution
+build-server/bin/Release/
+├── tux-target-srv.exe
+├── *.dll (runtime dependencies)
+├── data/
+│   ├── level/
+│   └── lua/
+├── logs/
+└── mtp_target_service.cfg
 ```
 
 ---
 
-## Step 3: Build Login Service (C++)
+## Running the Game
 
-The C++ login service is optional - we have a working Deno/TypeScript version. Build only if you need the original.
-
-### Ubuntu/Linux
+### With Log Rotation (Recommended)
 
 ```bash
-cd login_service
+# Start server
+./scripts/run-server.sh
 
-# Update Makefile with your NeL paths if needed
-make clean
-make all
-
-# Binary will be: login_service/login_service
+# Start client (in another terminal)
+./scripts/run-client.sh
 ```
 
-**Running:**
+These scripts:
+- Rotate old log files (keeps last 5)
+- Move logs to `logs/` subdirectory
+- Check for running services
+
+### Direct Execution
+
 ```bash
-cd login_service
+# Server
+cd build-server/bin/Release
+./tux-target-srv.exe
 
-# Set NeL library path
-export LD_LIBRARY_PATH=/path/to/ryzomcore/build/lib:$LD_LIBRARY_PATH
-
-# Run (requires MySQL database)
-./login_service
+# Client
+cd build-client/bin/Release
+./tux-target.exe
 ```
+
+### In-Game
+
+1. Select "Play on LAN"
+2. Enter `localhost` for server address
+3. Enter any username/password
+4. Enjoy!
 
 ---
 
-## Step 4: Build Client (TODO)
+## GitHub Actions CI
 
-Client compilation instructions coming soon. Requires:
-- All the same dependencies as the server
-- Additional graphics libraries (OpenGL, etc.)
-- Potentially FMOD for sound
+The project includes GitHub Actions workflows for automated builds:
+
+### Workflows
+
+| Workflow | Trigger | Purpose |
+|----------|---------|---------|
+| `build.yml` | Push/PR to main branches | Build and test |
+| `release.yml` | Tag push (`v*`) | Create GitHub release |
+
+### Caching
+
+CI builds cache:
+- RyzomCore libraries (~500MB)
+- Third-party dependencies (~200MB)
+
+First build takes longer; subsequent builds use cached dependencies.
+
+### Manual Release
+
+1. Push a tag: `git tag v1.2.2a && git push origin v1.2.2a`
+2. Or use workflow dispatch in GitHub Actions
 
 ---
 
 ## Troubleshooting
 
-### Common Build Errors
+### CMake Configuration Errors
 
-**"cannot find -lnel3d"**
-- Ensure RyzomCore is built successfully
-- Check Variables.mk has correct NEL_LIB path
-- Verify LD_LIBRARY_PATH includes the NeL library directory
+**"Could NOT find LibXml2"** or similar dependency errors
+- Check that `C:\tux_target_deps` exists and contains subdirectories for each library
+- Verify library names match: `libxml2.lib`, `libpng16.lib`, `jpeg.lib`, `freetype.lib`, `lua.lib`, `ode_doubles.lib`
+- Set environment variables to override default paths:
+  ```powershell
+  $env:NEL_PREFIX_PATH = "C:/your/path/to/ryzomcore/build"
+  $env:TUXDEPS_PREFIX_PATH = "C:/your/path/to/tux_target_deps"
+  ```
+- Then rebuild:
+  ```bash
+  ./scripts/build-client.bat --clean
+  ```
 
-**"Lua 5.0 not found"**
-- Lua 5.0 is obsolete - use Lua 5.1 instead
-- Our source code patches are already applied for 5.1 compatibility
+**"cannot find -lnel3d" or similar NeL errors**
+- Ensure RyzomCore is built at `C:\ryzomcore` (or set `NEL_PREFIX_PATH`)
+- Check that `C:\ryzomcore\build\lib\Release\` contains:
+  - `nelmisc_r.lib`, `nel3d_r.lib`, `nelsound_r.lib`, `nelnet_r.lib`, etc.
+- The build scripts explicitly reference these libraries, so verify the exact filenames
 
-**"ODE headers not found"**
-- Install libode-dev (Ubuntu) or build ODE from source
-- We support both old ODE 0.5 and modern ODE 0.16+
+**"Could NOT find Lua50"** but you have Lua 5.1
+- We use Lua 5.1, not Lua 5.0
+- Check `C:\tux_target_deps\lua\lib\lua.lib` exists
+- The build scripts set `-DLUA_LIBRARIES` (plural) to resolve this
 
-**"undefined reference to dInitODE"**
-- You're using ODE 0.16+ which requires explicit initialization
-- Our patches already include this fix
+**"Could NOT find SSLEAY"** or OpenSSL errors
+- OpenSSL library files are named `libssl.lib` and `libcrypto.lib` (not `ssleay32.lib`)
+- Check `C:\tux_target_deps\openssl\lib\` for the correct filenames
+- The build scripts use explicit paths: `-DSSLEAY_LIBRARY=%TUXDEPS_PREFIX_PATH%/openssl/lib/libssl.lib`
 
-**Format warnings about time_t**
-- These are non-critical warnings, safe to ignore
-- They don't affect functionality
+**CMake preset not found**
+- Requires CMake 3.21+
+- Check `CMakePresets.json` exists in project root
+- Run from project root: `cmake --preset client`
 
-### Runtime Warnings
+### Compilation/Linking Errors
 
-**"PATH: CPath::addSearchFile(data, 0, ''): 'data' is not found"**
-- Server expects `data/` directory in current working directory
-- Solution: Run from `server/` directory instead of `server/src/`
-- Or: Create symlink `ln -s ../data data` in `server/src/`
+**"unresolved external symbol" for PNG, JPEG, or FreeType functions**
+- These are required by NeL libraries but may not be explicitly linked
+- Ensure `C:\tux_target_deps` contains:
+  - `libpng/lib/libpng16.lib`
+  - `libjpeg/lib/jpeg.lib`
+  - `freetype/lib/freetype.lib`
+- The build scripts include these explicitly for the server build
+- If you see: `png_set_write_fn`, `jpeg_std_error`, `FT_Init_FreeType` - check these paths
 
-**"fgets failed"**
-- Non-critical stdin monitoring warning
-- Safe to ignore
+**"undefined reference to ODE functions"** (on Linux)
+- Ensure ODE is properly built and `libode.a` exists
+- Check ODE_LIBRARY path points to the correct ODE build
+- On Windows: check for `ode_doubles.lib` (not `ode.lib`)
+
+**Slow parallel compilation**
+- On Windows, the build scripts use MSBuild flag `/m:N` (not `-j`)
+- Verify the correct flag is used:
+  - Windows: `cmake --build . --config Release -- /m:32`
+  - Linux/macOS: `cmake --build . --config Release -j32`
+- If still slow, check `CMakeLists.txt` for `-j` flags in custom build rules
+
+### Runtime Errors
+
+**"nel_drv_opengl_win_r.dll not found"**
+- Run post_build script: `./scripts/post_build.sh --client-only`
+- Or manually copy from `C:\ryzomcore\build\bin\Release\nel_drv_opengl_win_r.dll`
+- Also need: `nel_drv_openal_win_r.dll`, `nel_drv_dsound_win_r.dll`
+
+**"data not found" warnings**
+- Run from the correct directory (where `data/` exists)
+- Or run post_build script to copy data files
+- Build scripts run this automatically with `--skip-post-build` to disable
+
+**Logs growing infinitely**
+- Use `run-client.sh` / `run-server.sh` scripts
+- They auto-rotate logs on startup
+- Logs are stored in `logs/` subdirectory with automatic rotation (keeps 5 versions)
+
+### Log Files
+
+Logs are stored in `logs/` subdirectory:
+- `log.log` - Main application log
+- `mtp_target_service.log` - Server log
+- `chat.log` - Chat history
+- `nel_debug.dmp` - Crash dumps
+
+Old logs are numbered: `log.log.1`, `log.log.2`, etc.
 
 ---
 
-## Source Code Modifications
+## Building Dependencies
 
-All modern compatibility fixes have been applied. See [MODIFICATIONS.md](MODIFICATIONS.md) for details:
-- Lua 5.0 → 5.1 API migration
-- 64-bit compatibility (size_t fixes, pointer casts)
-- Modern NeL API (ICommand interface, TServiceId)
-- ODE 0.16 support (dInitODE call)
-- Namespace collision fixes
+### RyzomCore (NeL)
 
----
-
-## Alternative: Deno Login Service (Recommended)
-
-Instead of building the C++ login service, use our TypeScript implementation:
-
-**Requirements:**
-- Deno 2.6.0+ ([install](https://deno.land/))
-
-**Setup:**
 ```bash
-cd login-service-deno
+git clone https://github.com/ryzom/ryzomcore.git C:/ryzomcore
+cd C:/ryzomcore
+mkdir build && cd build
 
-# Initialize database
-deno task db-setup
+cmake .. -G "Visual Studio 17 2022" -A x64 \
+    -DWITH_SOUND=ON \
+    -DWITH_NEL=ON \
+    -DWITH_NEL_TOOLS=OFF \
+    -DWITH_RYZOM=OFF \
+    -DWITH_STATIC=ON
 
-# Start login service (port 49997)
-deno task login
-
-# Start HTTP server (port 80, requires admin/sudo)
-sudo deno task http
+cmake --build . --config Release -j8
 ```
 
-**Advantages:**
-- No C++ compilation needed
-- SQLite instead of MySQL
-- Easier to debug and modify
-- Proven to work with the game client
+### ODE (Physics)
+
+Download ODE 0.16.5 from https://ode.org/ and build with CMake.
+
+### Other Dependencies
+
+Consider using vcpkg for: libxml2, libcurl, openssl, freetype, libjpeg, libpng, lua, libogg, libvorbis.
 
 ---
 
-## Next Steps
+## See Also
 
-1. **Test the Server:** Start the game server and verify it initializes
-2. **Set up Login Service:** Either build C++ version or use Deno version
-3. **Configure Hosts File:** Point game domains to localhost
-4. **Test Connection:** Try connecting with the game client
-
-See the main [README.md](../README.md) for full setup instructions.
+- [README.md](../README.md) - Project overview
+- [RUNTIME_FIXES.md](RUNTIME_FIXES.md) - Runtime issues and fixes
+- [MODIFICATIONS.md](MODIFICATIONS.md) - Source code changes
+- [LEVELS.md](LEVELS.md) - Level list and commands

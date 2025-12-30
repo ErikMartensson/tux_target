@@ -2,7 +2,7 @@
 
 This document describes all the fixes required after building the client and server to make the game actually playable.
 
-**Last Updated:** December 27, 2025 (Session 6)
+**Last Updated:** December 29, 2025 (Session 7)
 
 ---
 
@@ -21,17 +21,29 @@ After successfully building both the client (tux-target.exe) and server (tux-tar
 - Occurs during level loading after connecting to server
 
 **Root Cause:**
-- Water rendering code ([water_task.cpp:146-154](../client/src/water_task.cpp#L146-L154)) creates textures with empty filenames
-- Missing texture files: `water_env.tga`, `water_disp.tga`, `water_disp2.tga`
-- Code attempts: `new CTextureFile(res)` where `res` is an empty string
+- Water rendering code ([water_task.cpp:146-154](../client/src/water_task.cpp#L146-L154)) created textures with empty filenames
+- Missing texture files: code referenced `.tga` but actual files are `.dds` format
+- Missing files: `water_env.dds`, `water_disp.dds`, `water_disp2.dds`, `waterlight.dds`
 
-**Fix:**
-- Disabled water rendering in [mtp_target_default.cfg](../build/bin/Release/mtp_target_default.cfg)
-- Changed `DisplayWater = 2` to `DisplayWater = 0` (line 49)
+**Fix (Session 7 - December 29, 2025):**
+1. Fixed texture file extensions from `.tga` to `.dds` in [water_task.cpp](../client/src/water_task.cpp)
+2. Copied missing water textures to `build/bin/Release/data/texture/`
+3. Set `DisplayWater = 1` (basic water) as default
 
-**Status:** ✅ Fixed - water doesn't render but game doesn't crash
+**DisplayWater Modes:**
+- `DisplayWater = 0` - No water (original workaround)
+- `DisplayWater = 1` - ✅ Basic water (static texture, works)
+- `DisplayWater = 2` - ❌ Advanced water (crashes due to NeL3D compatibility issue)
 
-**Future:** Need to either find original water textures or create compatible ones
+**Advanced Water Issue (DisplayWater=2):**
+- Crashes with assertion: `"_Mode==RotEuler || _Mode==RotQuat"` in transformable.h:107
+- Root cause: NeL3D's CWaterModel transform mode not initialized correctly
+- Problem is inside Ryzom Core's `CWaterShape::createInstance()` which calls `setPos()` before transform mode is set
+- Not fixable without rebuilding/patching NeL3D library
+
+**Status:** ✅ Basic water working (DisplayWater=1)
+
+**Future:** Advanced water (DisplayWater=2) requires NeL3D library investigation/rebuild
 
 ---
 
@@ -347,7 +359,7 @@ The script automatically:
 
 | Issue | Component | Severity | Status | Fix Location |
 |-------|-----------|----------|--------|--------------|
-| Water rendering crash | Client | Critical | ✅ Fixed | mtp_target_default.cfg |
+| Water rendering crash | Client | Critical | ✅ Fixed | water_task.cpp + config |
 | Missing level files | Server | Critical | ✅ Fixed | Copied from archive |
 | Lua script paths | Server | Critical | ✅ Fixed | Level files updated |
 | Lua 5.x compatibility | Server | Critical | ✅ Fixed | 14 Lua server scripts |
@@ -367,7 +379,7 @@ The script automatically:
 ### Client Configuration
 
 **Primary Config:** `build/bin/Release/mtp_target_default.cfg`
-- `DisplayWater = 0` - Disabled water rendering
+- `DisplayWater = 1` - Basic water rendering (static texture)
 
 **User Config:** `C:\Users\User\AppData\Roaming\tux-target.cfg`
 - Contains login credentials and user preferences
@@ -392,15 +404,15 @@ The script automatically:
   - Verify score network sync to client
   - Test if scoring requires velocity threshold
 
-### Water Rendering Disabled
-- **Impact:** Missing visual element, player experience lacking
-- **Status:** DisplayWater = 0 (disabled)
-- **Advanced Mode (DisplayWater = 2):** Crashes with null pointer in WaterPoolManager
-- **Basic Mode (DisplayWater = 1):** Shows wrong texture (pixelated arrow)
+### Advanced Water Mode (DisplayWater=2)
+- **Impact:** Minor - basic water works, advanced water has better visuals
+- **Status:** DisplayWater = 1 (basic water enabled, advanced disabled)
+- **Advanced Mode (DisplayWater = 2):** Crashes with assertion in NeL3D CWaterModel
+- **Basic Mode (DisplayWater = 1):** ✅ Working with static water texture
+- **Root Cause:** NeL3D's CWaterShape::createInstance() calls setPos() before transform mode is set
 - **Next Steps:**
-  - Fix WaterPoolManager initialization for advanced mode
-  - Find or create correct water_light.shape for basic mode
-  - Search for original water texture files
+  - Would require patching/rebuilding Ryzom Core's NeL3D library
+  - Low priority since basic water is functional
 
 ### Physics Tuning
 - **Impact:** Gameplay balance issues
@@ -441,7 +453,7 @@ The script automatically:
 
 ---
 
-**Last Updated:** December 27, 2025 (Session 6)
+**Last Updated:** December 29, 2025 (Session 7)
 **Tested With:** Version 1.2.2a (client and server)
 **Platform:** Windows 11, Visual Studio 2022 Build Tools
-**Game Status:** Server stable through all 71 levels, camera/controls perfect, scoring still broken
+**Game Status:** Server stable through all 71 levels, camera/controls perfect, basic water working, scoring still broken
