@@ -36,18 +36,19 @@ This document tracks known issues and planned improvements for the Tux Target ga
 
 ### 3. High Ping on Local Server
 **Status:** Not Started
-**Description:** Playing on a locally-hosted server results in 15-17ms ping. Modern games typically have near-zero ping for local connections.
+**Description:** Playing on a locally-hosted server results in 17-19ms ping. Modern games typically have near-zero ping for local connections.
+
+**Note:** Network update rate was changed from 40ms to 20ms (50 Hz) in `server/src/network.cpp:142`, but this did not significantly reduce ping.
 
 **Possible Causes:**
-- Network tick rate too low
-- Artificial delay in network code
-- Inefficient packet handling
+- Client-side interpolation adding latency
 - Sleep/wait calls in network loop
+- Inefficient packet handling
 
 **Investigation Areas:**
+- `client/src/interpolator.cpp` - Client-side position smoothing
 - `server/src/network.cpp` - Network tick rate and packet handling
-- `server/src/physics.cpp` - Physics update rate
-- Client-side prediction and interpolation settings
+- Client-side prediction settings
 
 ---
 
@@ -73,25 +74,35 @@ This document tracks known issues and planned improvements for the Tux Target ga
 
 ---
 
-### 5. Momentum Loss on Ramp Transition
-**Status:** Not Started
-**Description:** Sometimes when hitting the bottom of the starting slope and transitioning into the launch ramp, all momentum is lost even when fully accelerating. This also affects bots occasionally.
+### 5. ~~Momentum Loss on Ramp Transition~~ (FIXED)
+**Status:** ✅ FIXED (January 2, 2026)
+**Description:** Players would lose momentum at slope-to-ramp transitions, stopping abruptly at angle changes.
 
-**Symptoms:**
-- Penguin suddenly stops at ramp transition
-- Happens even with full acceleration
-- Bots also affected
+**Root Cause Identified:**
+ODE's trimesh collision response was absorbing momentum at triangle mesh edges. When the sphere crossed from one triangle to another, ODE generated contact normals pointing into the velocity direction, treating edge crossings as frontal collisions.
 
-**Possible Causes:**
-- Physics collision issue at geometry seams
-- Velocity not being updated frequently enough (related to ping?)
-- ODE physics contact handling
-- Ground detection resetting velocity
+**Debug evidence showed:**
+```
+Before: pos(-0.149,-3.360,4.245) vel(-0.038,0.557,-0.376)
+After:  pos(-0.149,-3.360,4.245) vel(-0.036,0.480,-0.188)
+```
+Velocity dropped 50% at the same position with no code-triggered velocity zeroing.
 
-**Investigation Areas:**
-- `server/src/physics.cpp` - Collision handling
-- Level geometry - Check for gaps/seams at ramp transitions
-- Entity velocity update frequency
+**Fix Applied:**
+Changed contact surface mode from `dContactMu2` to `dContactApprox1` in `server/src/physics.cpp`:
+- `dContactMu2` with infinite friction treated edge contacts as head-on collisions
+- `dContactApprox1` uses friction pyramid approximation that preserves tangential velocity
+
+**Files Modified:**
+- `server/src/physics.cpp:243-257` - Contact mode changed to dContactApprox1
+
+**Failed Approaches (for reference):**
+1. Fix dBodySetAngularVel bug - No improvement (still valid bug fix)
+2. Reduce network throttle 40ms→5ms - No improvement
+3. Reduce CFM 1e-2→1e-4 - Made worse
+4. High bounce (0.9) + low threshold - Made worse
+5. Reduced friction (mu=100) - Made worse
+6. Slip mode contacts - No improvement
 
 ---
 
@@ -137,6 +148,7 @@ This document tracks known issues and planned improvements for the Tux Target ga
 - [x] Implement Lua include() function for level files
 - [x] Add build automation scripts
 - [x] Consolidate game assets in data/ directory
+- [x] **Fix momentum loss on ramp transitions** (January 2, 2026) - Changed ODE contact mode to dContactApprox1
 
 ---
 

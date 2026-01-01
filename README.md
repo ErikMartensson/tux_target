@@ -75,9 +75,8 @@ See [docs/KNOWN_ISSUES.md](docs/KNOWN_ISSUES.md) for the complete issue tracker.
 - ⚠️ **Bot AI issues** - Not working correctly on all maps
 
 **Medium Priority:**
-- ⚠️ **High ping on localhost** - 15-17ms instead of near-zero
+- ⚠️ **High ping on localhost** - 17-19ms instead of near-zero
 - ⚠️ **Input delay** - Noticeable lag between steering input and penguin response
-- ⚠️ **Momentum loss** - Occasionally stops at ramp transitions
 
 **Low Priority:**
 - ⚠️ **Water rendering disabled** - Falls back gracefully when textures missing
@@ -291,9 +290,8 @@ See [docs/KNOWN_ISSUES.md](docs/KNOWN_ISSUES.md) for the complete issue tracker.
 ### Open Issues
 - **64 maps unavailable** - Require v1.5.19 Lua API compatibility layer
 - **Bot AI broken** - Not deploying correctly on all maps
-- **High ping on localhost** - 15-17ms instead of near-zero
+- **High ping on localhost** - 17-19ms instead of near-zero
 - **Input delay** - Noticeable lag between steering and response
-- **Momentum loss** - Occasionally stops at ramp transitions
 - **Darts map spawn position** - Players spawn too far back (needs testing)
 - **Water rendering disabled** - Falls back gracefully when textures missing
 
@@ -311,6 +309,7 @@ See [docs/KNOWN_ISSUES.md](docs/KNOWN_ISSUES.md) for the complete issue tracker.
 - ✅ Level loading - 7 compatible levels load correctly
 - ✅ Game assets - All textures, shapes, sounds consolidated in repo
 - ✅ Network protocol - Full compatibility achieved
+- ✅ **Momentum loss on ramp transitions** - Fixed ODE trimesh edge collision (dContactApprox1)
 
 See [docs/RUNTIME_FIXES.md](docs/RUNTIME_FIXES.md) for fix documentation.
 

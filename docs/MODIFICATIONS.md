@@ -2,7 +2,7 @@
 
 This document details all changes made to the MTP Target source code for compatibility with modern systems (Ubuntu 22.04+, 64-bit, current libraries).
 
-**Last Updated:** December 27, 2025 (Session 6)
+**Last Updated:** January 2, 2026
 **Status:** All modifications applied and tested
 
 ---
@@ -460,6 +460,66 @@ CLevel = CLevel or {}    -- Only in files that use CLevel
 Without these declarations, the server crashed during level transitions when loading Lua server scripts. This fix enables stable gameplay through all 71 levels without crashes.
 
 **Note:** These are Lua runtime files, not C++ source code, but they're essential for the game to function with Lua 5.x.
+
+---
+
+## 9. ODE Trimesh Edge Collision Fix (Momentum Loss)
+
+**File:** [server/src/physics.cpp](../server/src/physics.cpp)
+
+### Problem
+Players would lose momentum at slope-to-ramp transitions. Debug logging revealed that at triangle mesh edges, ODE's collision response was absorbing up to 50% of velocity without any code explicitly zeroing it.
+
+### Root Cause
+ODE's `dContactMu2` mode with infinite friction treats edge contacts as head-on collisions. When a sphere crosses from one triangle to another at a mesh edge, ODE can generate contact normals pointing into the velocity direction, causing momentum absorption.
+
+### Changes
+
+#### Contact Surface Mode (lines 243-257)
+**Before:**
+```cpp
+if(module->bounce())
+{
+    contact[i].surface.mode = dContactBounce;
+    contact[i].surface.mu = dInfinity;
+    contact[i].surface.mu2 = 0;
+    // ...
+}
+else
+{
+    contact[i].surface.mode = dContactMu2;
+    contact[i].surface.mu = dInfinity;
+    contact[i].surface.mu2 = dInfinity;
+}
+```
+
+**After:**
+```cpp
+if(module->bounce())
+{
+    // Use dContactApprox1 to prevent momentum loss at trimesh edges
+    contact[i].surface.mode = dContactBounce | dContactApprox1;
+    contact[i].surface.mu = dInfinity;
+    contact[i].surface.mu2 = 0;
+    // ...
+}
+else
+{
+    // Use dContactApprox1 to prevent momentum loss at trimesh edges
+    // This uses friction pyramid approximation which preserves tangential velocity
+    contact[i].surface.mode = dContactApprox1;
+    contact[i].surface.mu = dInfinity;
+    contact[i].surface.mu2 = 0;
+}
+```
+
+### Why This Matters
+- `dContactApprox1` uses a friction pyramid approximation instead of explicit friction forces
+- This mode is more forgiving at triangle edges where normals can be ambiguous
+- Preserves tangential velocity (sliding motion) while still allowing normal collision response
+
+### Debug Logging (Optional)
+Added `PhysicsDebugLog` flag and `[COLLISION]`, `[VEL-ZERO]`, `[VELOCITY]` logging for future physics debugging. Disabled by default.
 
 ---
 
