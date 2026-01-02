@@ -198,7 +198,7 @@ void CEntity::update()
 	{
 		CMatrix m2;
 		m2.identity();
-		m2.setScale(CVector(0.01f, 0.01f, 0.01f));
+		m2.setScale(CVector(0.02f, 0.02f, 0.02f));
 		CMatrix m3;
 		m3.setMulMatrix(interpolator().getMatrix(), m2);
 		OpenMesh.setMatrix(m3);
@@ -208,7 +208,7 @@ void CEntity::update()
 	{
 		CMatrix m2;
 		m2.identity();
-		m2.setScale(CVector(0.01f, 0.01f, 0.01f));
+		m2.setScale(CVector(0.02f, 0.02f, 0.02f));
 		CMatrix m3;
 		m3.setMulMatrix(interpolator().getMatrix(), m2);
 		CloseMesh.setMatrix(m3);
