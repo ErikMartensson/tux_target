@@ -160,6 +160,15 @@ if exist "%PROJECT_DIR%\data\config\mtp_target_default.cfg" (
     copy /Y "%PROJECT_DIR%\client\mtp_target_default.cfg" "%RELEASE_DIR%\" >nul
     echo    ! Warning: Using original config (may need water fix)
 )
+
+REM Create tux-target.cfg wrapper (client looks for this file, not mtp_target_default.cfg)
+if not exist "%RELEASE_DIR%\tux-target.cfg" (
+    echo // This file tells the client where to find the main config> "%RELEASE_DIR%\tux-target.cfg"
+    echo RootConfigFilename = "mtp_target_default.cfg";>> "%RELEASE_DIR%\tux-target.cfg"
+    echo    + Created: tux-target.cfg
+) else (
+    echo    + tux-target.cfg already exists
+)
 echo.
 set /a STEP+=1
 
@@ -247,10 +256,24 @@ if exist "%PROJECT_DIR%\data\lua" (
 echo.
 set /a STEP+=1
 
+REM Module Lua scripts (Server-specific - for paint, team, etc.)
+echo %STEP%. Copying module Lua scripts...
+if not exist "%RELEASE_DIR%\data\module" mkdir "%RELEASE_DIR%\data\module"
+if exist "%PROJECT_DIR%\data\module" (
+    copy /Y "%PROJECT_DIR%\data\module\*.lua" "%RELEASE_DIR%\data\module\" >nul 2>nul
+    for /f %%a in ('dir /b "%RELEASE_DIR%\data\module\*.lua" 2^>nul ^| C:\Windows\System32\find.exe /c /v ""') do set MODULE_COUNT=%%a
+    echo    + Copied !MODULE_COUNT! module Lua scripts
+) else (
+    echo    ! Warning: Module Lua scripts not found
+)
+echo.
+set /a STEP+=1
+
 REM Create server directories
 echo %STEP%. Creating server directory structure...
 if not exist "%RELEASE_DIR%\data\level" mkdir "%RELEASE_DIR%\data\level"
 if not exist "%RELEASE_DIR%\data\lua" mkdir "%RELEASE_DIR%\data\lua"
+if not exist "%RELEASE_DIR%\data\module" mkdir "%RELEASE_DIR%\data\module"
 if not exist "%RELEASE_DIR%\data\shape" mkdir "%RELEASE_DIR%\data\shape"
 if not exist "%RELEASE_DIR%\data\texture" mkdir "%RELEASE_DIR%\data\texture"
 if not exist "%RELEASE_DIR%\data\particle" mkdir "%RELEASE_DIR%\data\particle"

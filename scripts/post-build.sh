@@ -199,6 +199,17 @@ if [ "$SERVER_ONLY" = false ]; then
                   "${RELEASE_DIR}/mtp_target_default.cfg"
         echo -e "${YELLOW}⚠ Using original config (may need water fix)${NC}"
     fi
+
+    # Create tux-target.cfg wrapper (client looks for this file, not mtp_target_default.cfg)
+    if [ ! -f "${RELEASE_DIR}/tux-target.cfg" ]; then
+        cat > "${RELEASE_DIR}/tux-target.cfg" << 'EOF'
+// This file tells the client where to find the main config
+RootConfigFilename = "mtp_target_default.cfg";
+EOF
+        echo -e "${GREEN}✓ Created: tux-target.cfg${NC}"
+    else
+        echo -e "${GREEN}✓ tux-target.cfg already exists${NC}"
+    fi
     echo ""
     STEP=$((STEP + 1))
 
@@ -252,10 +263,24 @@ if [ "$CLIENT_ONLY" = false ]; then
     echo ""
     STEP=$((STEP + 1))
 
+    # Module Lua scripts (Server-specific - for paint, team, etc.)
+    echo "${STEP}. Copying module Lua scripts..."
+    mkdir -p "${RELEASE_DIR}/data/module"
+    if [ -d "${PROJECT_DIR}/data/module" ]; then
+        cp -r "${PROJECT_DIR}/data/module"/*.lua "${RELEASE_DIR}/data/module/" 2>/dev/null || true
+        MODULE_COUNT=$(ls "${RELEASE_DIR}/data/module"/*.lua 2>/dev/null | wc -l)
+        echo -e "${GREEN}✓ Copied ${MODULE_COUNT} module Lua scripts${NC}"
+    else
+        echo -e "${YELLOW}⚠ Module Lua scripts not found in ${PROJECT_DIR}/data/module${NC}"
+    fi
+    echo ""
+    STEP=$((STEP + 1))
+
     # Create server directories
     echo "${STEP}. Creating server directory structure..."
     mkdir -p "${RELEASE_DIR}/data/level"
     mkdir -p "${RELEASE_DIR}/data/lua"
+    mkdir -p "${RELEASE_DIR}/data/module"
     mkdir -p "${RELEASE_DIR}/data/shape"
     mkdir -p "${RELEASE_DIR}/data/texture"
     mkdir -p "${RELEASE_DIR}/data/particle"
