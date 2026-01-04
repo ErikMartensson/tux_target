@@ -171,7 +171,7 @@ jobs:
         uses: actions/cache@v4
         with:
           path: C:/ryzomcore
-          key: ryzomcore-nel-v6
+          key: ryzomcore-nel-v7
           restore-keys: |
             ryzomcore-nel-
 
@@ -289,7 +289,7 @@ jobs:
         uses: actions/cache/restore@v4
         with:
           path: C:/ryzomcore
-          key: ryzomcore-nel-v6
+          key: ryzomcore-nel-v7
           restore-keys: |
             ryzomcore-nel-
 
@@ -422,7 +422,7 @@ jobs:
         uses: actions/cache/restore@v4
         with:
           path: C:/ryzomcore
-          key: ryzomcore-nel-v6
+          key: ryzomcore-nel-v7
           restore-keys: |
             ryzomcore-nel-
 

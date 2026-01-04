@@ -8,14 +8,17 @@
 IF (NOT ODE_FOUND)
 
   FIND_PATH(ODE_INCLUDE_DIR ode/ode.h
+    PATHS
+    ${CMAKE_PREFIX_PATH}/ode/include
     /usr/include
     /usr/local/include
     $ENV{OGRE_HOME}/include # OGRE SDK on WIN32
     $ENV{INCLUDE}
   )
   FIND_LIBRARY(ODE_LIBRARY
-    NAMES ode
+    NAMES ode ode_doubles ode_single
     PATHS
+    ${CMAKE_PREFIX_PATH}/ode/lib
     /usr/lib
     /usr/local/lib
     $ENV{OGRE_HOME}/lib # OGRE SDK on WIN32
