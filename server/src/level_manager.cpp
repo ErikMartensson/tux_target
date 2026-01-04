@@ -150,6 +150,39 @@ bool CLevelManager::newLevel(string &str1, string &str2)
 
 	nlassert(levels.size() > 0);
 
+	// Check for LevelPlaylist - if set, use it to control which levels and in what order
+	try {
+		CConfigFile::CVar &playlist = IService::getInstance()->ConfigFile.getVar("LevelPlaylist");
+		if(playlist.size() > 0)
+		{
+			vector<string> playlistLevels;
+			for(uint p = 0; p < (uint)playlist.size(); p++)
+			{
+				string playlistEntry = playlist.asString(p);
+				// Find matching level file
+				for(uint l = 0; l < levels.size(); l++)
+				{
+					if(levels[l].find(playlistEntry) != string::npos)
+					{
+						playlistLevels.push_back(levels[l]);
+						break;
+					}
+				}
+			}
+			if(playlistLevels.size() > 0)
+			{
+				levels = playlistLevels;
+				nlinfo("Using LevelPlaylist with %d levels", (int)levels.size());
+			}
+			else
+			{
+				nlwarning("LevelPlaylist defined but no matching levels found");
+			}
+		}
+	} catch(...) {
+		// LevelPlaylist not defined, use default rotation
+	}
+
 	if(CurrentLevel)
 	{
 		delete CurrentLevel;
@@ -448,30 +481,59 @@ CLevelManager::EForceMapResult CLevelManager::findAndForceMap(
 
 	luaClose(L);
 
-	// Check ReleaseLevel against config
-	CConfigFile::CVar &configReleaseLevel = IService::getInstance()->ConfigFile.getVar("ReleaseLevel");
-	bool releaseLevelOk = false;
-
-	if(configReleaseLevel.size() == 0)
-	{
-		releaseLevelOk = true;
-	}
-	else
-	{
-		for(uint i = 0; i < (uint)configReleaseLevel.size(); i++)
+	// Check LevelPlaylist first - if defined, it overrides ReleaseLevel
+	bool hasPlaylist = false;
+	try {
+		CConfigFile::CVar &playlist = IService::getInstance()->ConfigFile.getVar("LevelPlaylist");
+		if(playlist.size() > 0)
 		{
-			if((int)releaseLevel == configReleaseLevel.asInt(i))
+			hasPlaylist = true;
+			bool inPlaylist = false;
+			for(uint i = 0; i < (uint)playlist.size(); i++)
 			{
-				releaseLevelOk = true;
-				break;
+				if(fileName.find(playlist.asString(i)) != string::npos)
+				{
+					inPlaylist = true;
+					break;
+				}
+			}
+			if(!inPlaylist)
+			{
+				invalidReason = "Level not in LevelPlaylist";
+				return ForceMapInvalid;
 			}
 		}
+	} catch(...) {
+		// LevelPlaylist not defined
 	}
 
-	if(!releaseLevelOk)
+	// Only check ReleaseLevel if LevelPlaylist is not defined
+	if(!hasPlaylist)
 	{
-		invalidReason = toString("ReleaseLevel %d not in allowed list", (int)releaseLevel);
-		return ForceMapInvalid;
+		CConfigFile::CVar &configReleaseLevel = IService::getInstance()->ConfigFile.getVar("ReleaseLevel");
+		bool releaseLevelOk = false;
+
+		if(configReleaseLevel.size() == 0)
+		{
+			releaseLevelOk = true;
+		}
+		else
+		{
+			for(uint i = 0; i < (uint)configReleaseLevel.size(); i++)
+			{
+				if((int)releaseLevel == configReleaseLevel.asInt(i))
+				{
+					releaseLevelOk = true;
+					break;
+				}
+			}
+		}
+
+		if(!releaseLevelOk)
+		{
+			invalidReason = toString("ReleaseLevel %d not in allowed list", (int)releaseLevel);
+			return ForceMapInvalid;
+		}
 	}
 
 	// All checks passed - set the preferred map if requested

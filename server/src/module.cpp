@@ -174,9 +174,9 @@ void CModule::_luaInit()
 	}
 	
 
-	lua_pushliteral(CLuaEngine::getInstance().session(), "module");
+	// Set global "module" variable for the Lua script
 	Lunar<CModuleProxy>::push(CLuaEngine::getInstance().session(), luaProxy);
-	lua_settable(CLuaEngine::getInstance().session(), LUA_GLOBALSINDEX);
+	lua_setglobal(CLuaEngine::getInstance().session(), "module");
 	
 	luaLoad(CLuaEngine::getInstance().session(),filename);
 

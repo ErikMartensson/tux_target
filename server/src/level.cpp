@@ -96,27 +96,40 @@ void CLevel::_luaInit()
 	else
 		return;
 	
-	float ReleaseLevel = 1;
-	luaGetGlobalVariable(_luaSession, ReleaseLevel);
-
-	CConfigFile::CVar &releaseLevel = IService::getInstance()->ConfigFile.getVar("ReleaseLevel");
-	bool releaseLevelOk = false;
-	for(uint i = 0; i < (uint)releaseLevel.size(); i ++)
-	{
-		int rl = releaseLevel.asInt(i);
-		if(ReleaseLevel == rl)
-		{
-			releaseLevelOk = true;
-			break;
-		}
+	// Check if LevelPlaylist is defined - if so, it overrides ReleaseLevel
+	bool skipReleaseLevelCheck = false;
+	try {
+		CConfigFile::CVar &playlist = IService::getInstance()->ConfigFile.getVar("LevelPlaylist");
+		if(playlist.size() > 0)
+			skipReleaseLevelCheck = true;
+	} catch(...) {
+		// LevelPlaylist not defined
 	}
-	if(releaseLevel.size()==0)
-		releaseLevelOk = true;
-	
-	if(!releaseLevelOk)
+
+	if(!skipReleaseLevelCheck)
 	{
-		Valid = false;
-		return;
+		float ReleaseLevel = 1;
+		luaGetGlobalVariable(_luaSession, ReleaseLevel);
+
+		CConfigFile::CVar &releaseLevel = IService::getInstance()->ConfigFile.getVar("ReleaseLevel");
+		bool releaseLevelOk = false;
+		for(uint i = 0; i < (uint)releaseLevel.size(); i ++)
+		{
+			int rl = releaseLevel.asInt(i);
+			if(ReleaseLevel == rl)
+			{
+				releaseLevelOk = true;
+				break;
+			}
+		}
+		if(releaseLevel.size()==0)
+			releaseLevelOk = true;
+
+		if(!releaseLevelOk)
+		{
+			Valid = false;
+			return;
+		}
 	}
 
 	string ServerLua;
@@ -235,12 +248,60 @@ void CLevel::_luaInit()
 		string ShapeName;
 		lua_pushstring(_luaSession,"Shape");
 		lua_gettable(_luaSession, -2);
-		luaGetVariable(_luaSession, ShapeName);		
+		luaGetVariable(_luaSession, ShapeName);
 		nlinfo("ShapeName %s", ShapeName.c_str());
 		lua_pop(_luaSession, 1);  // removes `value'; keeps `key' for next iteration
-		
+
+		// Get module Score
+		sint32 ModuleScore = 0;
+		lua_pushstring(_luaSession,"Score");
+		lua_gettable(_luaSession, -2);
+		if (!lua_isnil(_luaSession, -1))
+		{
+			ModuleScore = (sint32)lua_tonumber(_luaSession, -1);
+			nlinfo("Score %d", ModuleScore);
+		}
+		lua_pop(_luaSession, 1);
+
+		// Get module Friction
+		float ModuleFriction = 0;
+		lua_pushstring(_luaSession,"Friction");
+		lua_gettable(_luaSession, -2);
+		if (!lua_isnil(_luaSession, -1))
+		{
+			ModuleFriction = (float)lua_tonumber(_luaSession, -1);
+			nlinfo("Friction %f", ModuleFriction);
+		}
+		lua_pop(_luaSession, 1);
+
+		// Get module Accel
+		float ModuleAccel = 0;
+		lua_pushstring(_luaSession,"Accel");
+		lua_gettable(_luaSession, -2);
+		if (!lua_isnil(_luaSession, -1))
+		{
+			ModuleAccel = (float)lua_tonumber(_luaSession, -1);
+			nlinfo("Accel %f", ModuleAccel);
+		}
+		lua_pop(_luaSession, 1);
+
+		// Get module Bounce
+		bool ModuleBounce = false;
+		lua_pushstring(_luaSession,"Bounce");
+		lua_gettable(_luaSession, -2);
+		if (!lua_isnil(_luaSession, -1))
+		{
+			ModuleBounce = lua_tonumber(_luaSession, -1) != 0;
+			nlinfo("Bounce %d", ModuleBounce ? 1 : 0);
+		}
+		lua_pop(_luaSession, 1);
+
 		CModule *mod = new CModule();
 		mod->init(Lua,ShapeName, moduleId, Position, Scale, Rotation, Color);
+		mod->score(ModuleScore);
+		mod->friction(ModuleFriction);
+		mod->accel(ModuleAccel);
+		mod->bounce(ModuleBounce);
 		Modules.push_back(mod);
 		moduleId++;
 		lua_pop(_luaSession, 1);
