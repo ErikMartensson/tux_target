@@ -86,7 +86,7 @@ LevelPlaylist = { };                   # Empty = normal rotation
 
 | Branch | Purpose |
 |--------|---------|
-| `frankensteins-monster` | Active development with all fixes |
+| `main` | Active development with all fixes |
 | `master` | Pristine original v1.2.2a source for comparison |
 
 ## Key Source Files

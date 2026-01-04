@@ -2,9 +2,9 @@ name: Build
 
 on:
   push:
-    branches: [frankensteins-monster, master]
+    branches: [main]
   pull_request:
-    branches: [frankensteins-monster, master]
+    branches: [main]
   workflow_dispatch:
     inputs:
       build_type:
