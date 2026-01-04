@@ -1,6 +1,6 @@
 Name = "Team All on one"
 Author = "Skeet"
-ServerLua = "data/lua/data/lua/level_team_all_on_one_server.lua"
+ServerLua = "data/lua/level_team_all_on_one_server.lua"
 ReleaseLevel = 2
 
 skyShapeFileName = "sky.shape";
@@ -62,11 +62,11 @@ StartPoints =
 
 Modules =
 {
-	{ Position = CVector(-0.105469,0.000000,5.000000), Scale = CVector(1.000000, 1.000000, 1.000000), Rotation = CAngleAxis(1.000000,0.000000,0.000000,0.000000), Color = CRGBA(255,255,255,255), Lua="snow_ramp", Shape="snow_ramp" },
-	{ Position = CVector(10, -25, 3.5), Scale = CVector(1, 1, 1), Rotation = CAngleAxis(1,0,0,0), Lua = "snow_island", Shape="snow_island" },
-	{ Position = CVector(6, -14, 2.8), Scale = CVector(1, 1, 1), Rotation = CAngleAxis(1,0,0,0), Lua = "snow_island2", Shape="snow_island2" },
-	{ Position = CVector(-3.8, -17.0, 2), Scale = CVector(1, 1, 1), Rotation = CAngleAxis(1,0,0,0),	Lua = "snow_island3", Shape="snow_island3" },
-	{ Position = CVector(-0.1, -15.33, 2.8), Scale = CVector(6, 6, 1), Rotation = CAngleAxis(1,0,0,0), Color = CRGBA(100,255,100,255), Lua = "snow_target_100_flat", Shape="box_sol" },
+	{ Position = CVector(-0.105469,0.000000,5.000000), Scale = CVector(1.000000, 1.000000, 1.000000), Rotation = CAngleAxis(1.000000,0.000000,0.000000,0.000000), Color = CRGBA(255,255,255,255), Lua="snow_ramp", Shape="snow_ramp", Friction = 0, Bounce = 0, Accel = 0.0001 },
+	{ Position = CVector(10, -25, 3.5), Scale = CVector(1, 1, 1), Rotation = CAngleAxis(1,0,0,0), Lua = "snow_island", Shape="snow_island", Friction = 0 },
+	{ Position = CVector(6, -14, 2.8), Scale = CVector(1, 1, 1), Rotation = CAngleAxis(1,0,0,0), Lua = "snow_island2", Shape="snow_island2", Friction = 0 },
+	{ Position = CVector(-3.8, -17.0, 2), Scale = CVector(1, 1, 1), Rotation = CAngleAxis(1,0,0,0),	Lua = "snow_island3", Shape="snow_island3", Friction = 0 },
+	{ Position = CVector(-0.1, -15.33, 2.8), Scale = CVector(6, 6, 1), Rotation = CAngleAxis(1,0,0,0), Color = CRGBA(100,255,100,255), Lua = "snow_target_100_flat", Shape="box_sol", Score = 100, Friction = 10 },
 }
 
 

@@ -1,9 +1,22 @@
-include("level_arena_server.lua")
-
 Name = "Arena"
+Author = "Skeet"
+ServerLua = "data/lua/level_arena_server.lua"
 ReleaseLevel = 0
 
-CameraMinDistFromStartPointToMove = 10;
+skyShapeFileName = "sky.shape"
+
+sunAmbientColor = CRGBA(82, 100, 133, 255);
+sunDiffuseColor = CRGBA(255, 255, 255, 255);
+sunSpecularColor = CRGBA(255, 255, 255, 255);
+sunDirection = CVector(-1,0,-1);
+
+clearColor = CRGBA(30, 45, 90, 0);
+
+fogDistMin = 0;
+fogDistMax = 150;
+fogColor = clearColor;
+
+cameraMinDistFromStartPointToMove = 10.0;
 
 Cameras =
 {
@@ -43,13 +56,20 @@ StartPoints =
 	CVector(-0.168845,-0.211155,0.616442),
 	CVector(-0.215316,0.101510,0.616442),
 	CVector(-0.219723,0.205184,0.616442),
+
 }
 
 Modules =
 {
-	{ Position = CVector(0,0,0.5), Scale = CVector(1,1,1), Rotation = CAngleAxis(0,0,1,0), Shape="arena" },
-	{ Position = CVector(-0.023449,0.000023,1), Scale = CVector(1,1,1), Rotation = CAngleAxis(0,0,1,0), Shape="boxae" },
-	{ Position = CVector(0.476551,0,1), Scale = CVector(1,1,1), Rotation = CAngleAxis(0,0,1,3), Shape="boxae" },
+	{ Position = CVector(0.000000,0.000000,0.500000), Scale = CVector(1, 1, 1), Rotation = CAngleAxis(1.000000,0.000000,0.000000,0.000000), Lua="arena", Shape="arena", Friction = 0 },
+	{ Position = CVector(-0.023449,0.000023,1.000000), Scale = CVector(1, 1, 1), Rotation = CAngleAxis(1.000000,0.000000,0.000000,0.000000), Lua="boxae", Shape="boxae", Friction = 0 },
+	{ Position = CVector(0.476551,0.000000,1.000000), Scale = CVector(1, 1, 1), Rotation = CAngleAxis(0.000000,0.000000,1.000000,3.00000), Lua="boxae", Shape="boxae", Friction = 0 },
+
+}
+
+
+Particles =
+{
 }
 
 ExternalCameras =

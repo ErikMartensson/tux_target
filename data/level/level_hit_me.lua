@@ -1,9 +1,21 @@
-include("level_hit_me_server.lua")
-
 Name = "Hit me"
+Author = "Skeet"
+ServerLua = "data/lua/level_hit_me_server.lua"
 ReleaseLevel = 0
 
-CameraMinDistFromStartPointToMove = 0.01;
+skyShapeFileName = "sky.shape";
+sunAmbientColor = CRGBA(82, 100, 133, 255);
+sunDiffuseColor = CRGBA(255, 255, 255, 255);
+sunSpecularColor = CRGBA(255, 255, 255, 255);
+sunDirection = CVector(-1,0,-1);
+
+clearColor = CRGBA(30, 45, 90, 0);
+
+fogDistMin = 0;
+fogDistMax = 150;
+fogColor = clearColor;
+
+cameraMinDistFromStartPointToMove = 0.01;
 
 Cameras =
 {
@@ -48,13 +60,17 @@ StartPoints =
 
 Modules =
 {
-	{ Position = CVector(10,-25,3.5), Shape="snow_island" },
-	{ Position = CVector(6,-14,2.8), Shape="snow_island2" },
-	{ Position = CVector(-3.8,-17,2), Shape="snow_island3" },
-	{ Position = CVector(1.216417,-14.929698,2.956648), Scale = CVector(300, 4, 10), Lua="hit_me_lane", Shape="snow_box" },
-	{ Position = CVector(1.397697,-14.930597,2.805407), Scale = CVector(300, 20, 10), Lua="dont_go_too_far_target_100", Shape="snow_box" },
-	{ Position = CVector(0,0,5), Shape="snow_ramp" },
+	{ Position = CVector(10.000000,-25.000000,3.500000), Scale = CVector(1.000000, 1.000000, 1.000000), Rotation = CAngleAxis(1.000000,0.000000,0.000000,0.000000), Lua="snow_island", Shape="snow_island", Friction = 0 },
+	{ Position = CVector(6.000000,-14.000000,2.800000), Scale = CVector(1.000000, 1.000000, 1.000000), Rotation = CAngleAxis(1.000000,0.000000,0.000000,0.000000), Lua="snow_island2", Shape="snow_island2", Friction = 0 },
+	{ Position = CVector(-3.800000,-17.000000,2.000000), Scale = CVector(1.000000, 1.000000, 1.000000), Rotation = CAngleAxis(1.000000,0.000000,0.000000,0.000000), Lua="snow_island3", Shape="snow_island3", Friction = 0 },
+	{ Position = CVector(1.216417,-14.929698,2.956648), Scale = CVector(300.000000, 4.000000, 10.000000), Rotation = CAngleAxis(1.000000,0.000000,0.000000,0.000000), Lua="hit_me_lane", Shape="box_sol", Friction = 0 },
+	{ Position = CVector(1.397697,-14.930597,2.805407), Scale = CVector(300.000000, 20.000000, 10.000000), Rotation = CAngleAxis(1.000000,0.000000,0.000000,0.000000), Lua="dont_go_too_far_target_100", Shape="box_sol", Friction = 0 },
+	{ Position = CVector(0.000000,0.000000,5.000000), Scale = CVector(1.000000, 1.000000, 1.000000), Rotation = CAngleAxis(1.000000,0.000000,0.000000,0.000000), Lua="snow_ramp", Shape="snow_ramp", Friction = 0 },
 
+}
+
+Particles =
+{
 }
 
 ExternalCameras =

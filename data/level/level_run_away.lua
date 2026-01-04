@@ -1,7 +1,19 @@
-include("level_run_away_server.lua")
-
 Name = "Run Away"
+Author = "Skeet"
+ServerLua = "data/lua/level_run_away_server.lua"
 ReleaseLevel = 0
+
+skyShapeFileName = "sky.shape";
+sunAmbientColor = CRGBA(82, 100, 133, 255);
+sunDiffuseColor = CRGBA(255, 255, 255, 255);
+sunSpecularColor = CRGBA(255, 255, 255, 255);
+sunDirection = CVector(-1,0,-1);
+
+clearColor = CRGBA(30, 45, 90, 0);
+
+fogDistMin = 0;
+fogDistMax = 150;
+fogColor = clearColor;
 
 Cameras =
 {
@@ -46,8 +58,14 @@ StartPoints =
 
 Modules =
 {
-	{ Position = CVector(1.230400,-14.914321,2.886570), Scale = CVector(1, 1, 0.2), Lua="run_away_bowl", Shape="snow_bowl" },
-	{ Position = CVector(0,0,5), Shape="snow_ramp" },
+	{ Position = CVector(1.230400,-14.914321,2.886570), Scale = CVector(1.000000, 1.000000, 0.200000), Rotation = CAngleAxis(1.000000,0.000000,0.000000,0.000000), Lua="run_away_bowl", Shape="snow_bowl", Friction = 0 },
+	{ Position = CVector(0.000000,0.000000,5.000000), Scale = CVector(1.000000, 1.000000, 1.000000), Rotation = CAngleAxis(1.000000,0.000000,0.000000,0.000000), Lua="snow_ramp", Shape="snow_ramp", Friction = 0 },
+
+}
+
+
+Particles =
+{
 }
 
 ExternalCameras =
