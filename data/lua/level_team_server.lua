@@ -183,15 +183,41 @@ function Module:parent()
   return self:getUserData();
 end
 
+-- Determine module team from userdata or module name
+function Module:getModuleTeam()
+  local parent = self:getUserData()
+  if parent and parent.getTeam then
+    return parent:getTeam()
+  end
+  -- Fallback: try to determine from module name if available
+  local ok, name = pcall(function() return self:getName() end)
+  if ok and name then
+    if string.find(name, "red") then
+      return 0  -- red team
+    elseif string.find(name, "blue") then
+      return 1  -- blue team
+    end
+  end
+  return -1  -- no team (decorative module or unknown)
+end
 
 function Module:collide( entity )
   if(entity:getIsOpen()==1) then
     entity:setCurrentScore(0)
   else
-    if(self:parent():getTeam()==entity:parent():getTeam()) then
+    local moduleTeam = self:getModuleTeam()
+    local playerTeam = entity:parent():getTeam()
+
+    if moduleTeam >= 0 then
+      -- Team target: positive for own team, negative for enemy
+      if moduleTeam == playerTeam then
+        entity:parent():setTeamScore(self:getScore())
+      else
+        entity:parent():setTeamScore(-self:getScore())
+      end
+    elseif self:getScore() > 0 then
+      -- Unknown team module with score: give positive points (fallback)
       entity:parent():setTeamScore(self:getScore())
-    else
-      entity:parent():setTeamScore(-self:getScore())
     end
   end
   --print(entity:getName());

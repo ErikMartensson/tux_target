@@ -29,13 +29,14 @@ end
 
 function entityWaterCollideEvent ( entity )
   --entity:setCurrentScore(0);
-  if(entity:getIsOpen()==0) then
-    pos = entity:getStartPointPos();
-    entity:setPos(pos);
-    entity:setOpenCloseCount(0);
-    entity:setFreezCommand(0);
-    entity:displayText(0,6,1,0,255,0,"Extra Ball !!",40);
-  end
+  -- Respawn on water collision in both ball mode and fly mode
+  -- First close the entity (ball mode) to reset physics state
+  entity:setIsOpen(0);
+  pos = entity:getStartPointPos();
+  entity:setPos(pos);
+  entity:setOpenCloseCount(0);
+  entity:setFreezCommand(0);
+  entity:displayText(0,6,1,0,255,0,"Extra Ball !!",40);
 end
 
 function Module:init()

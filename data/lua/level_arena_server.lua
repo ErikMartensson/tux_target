@@ -15,7 +15,7 @@ function Entity:init()
 end
 
 function Entity:preUpdate()
-  self:setCurrentScore(0);
+  -- Don't reset score every frame!
 end
 
 function Entity:update()
@@ -35,6 +35,9 @@ function entityWaterCollideEvent ( entity )
 end
 
 function Module:collide( entity )
+  if(entity:getIsOpen()==0 and self:getScore()~=0) then
+    entity:setCurrentScore(self:getScore());
+  end
 end
 
 

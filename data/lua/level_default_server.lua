@@ -12,7 +12,7 @@ function Entity:init()
 end
 
 function Entity:preUpdate()
-  self:setCurrentScore(0);
+  -- Don't reset score every frame!
 end
 
 function Entity:update()
