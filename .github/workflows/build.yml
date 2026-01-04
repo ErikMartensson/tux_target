@@ -189,7 +189,10 @@ jobs:
             -DVORBIS_INCLUDE_DIR=C:/external/vorbis/include `
             -DVORBIS_LIBRARY=C:/external/vorbis/lib/vorbis.lib `
             -DVORBISFILE_LIBRARY=C:/external/vorbis/lib/vorbisfile.lib `
-            -DBoost_INCLUDE_DIR=C:/external/boost/include
+            -DBoost_INCLUDE_DIR=C:/external/boost/include `
+            -DOPENSSL_CRYPTO_LIBRARY=C:/external/openssl/lib/VC/libcrypto64MD.lib `
+            -DOPENSSL_SSL_LIBRARY=C:/external/openssl/lib/VC/libssl64MD.lib `
+            -DOPENSSL_LIBRARIES="C:/external/openssl/lib/VC/libcrypto64MD.lib;C:/external/openssl/lib/VC/libssl64MD.lib"
 
           Write-Host "Building RyzomCore..."
           cmake --build . --config Release --parallel 4 --target nelmisc nelnet nel3d nelsound nelsnd_lowlevel nelgeorges nelligo
