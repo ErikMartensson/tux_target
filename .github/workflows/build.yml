@@ -47,7 +47,7 @@ jobs:
         uses: actions/cache@v4
         with:
           path: C:/external
-          key: ryzom-external-2022q2-v1
+          key: ryzom-external-2022q2-v2
           restore-keys: |
             ryzom-external-2022q2-
 
@@ -64,13 +64,36 @@ jobs:
           Invoke-WebRequest -Uri $url -OutFile $output -UseBasicParsing
           $ProgressPreference = 'Continue'
 
-          Write-Host "Extracting dependencies to C:/external..."
-          7z x $output -oC:/ -y
+          # Create target directory
+          New-Item -ItemType Directory -Force -Path "C:/external"
 
-          # The archive extracts to "external" folder
-          if (!(Test-Path "C:/external")) {
-            Write-Error "External directory not found after extraction"
-            exit 1
+          Write-Host "Extracting dependencies to C:/external..."
+          7z x $output -oC:/external -y
+
+          # List what was extracted
+          Write-Host "Extracted contents:"
+          Get-ChildItem C:/external -Directory | Select-Object Name
+
+          # Verify key directories exist (lua, libxml2, etc.)
+          $required = @("lua", "libxml2", "zlib")
+          $allFound = $true
+          foreach ($dir in $required) {
+            if (!(Test-Path "C:/external/$dir")) {
+              Write-Warning "Expected directory not found: $dir"
+              $allFound = $false
+            }
+          }
+
+          # If standard structure not found, check if there's a nested folder
+          if (!$allFound) {
+            Write-Host "Checking for nested folder structure..."
+            $nested = Get-ChildItem C:/external -Directory | Select-Object -First 1
+            if ($nested -and (Test-Path "C:/external/$($nested.Name)/lua")) {
+              Write-Host "Found nested structure in: $($nested.Name)"
+              Write-Host "Moving contents up one level..."
+              Get-ChildItem "C:/external/$($nested.Name)" | Move-Item -Destination "C:/external/" -Force
+              Remove-Item "C:/external/$($nested.Name)" -Recurse -Force -ErrorAction SilentlyContinue
+            }
           }
 
           # Cleanup archive to save space
@@ -177,7 +200,7 @@ jobs:
         uses: actions/cache/restore@v4
         with:
           path: C:/external
-          key: ryzom-external-2022q2-v1
+          key: ryzom-external-2022q2-v2
           restore-keys: |
             ryzom-external-2022q2-
 
@@ -310,7 +333,7 @@ jobs:
         uses: actions/cache/restore@v4
         with:
           path: C:/external
-          key: ryzom-external-2022q2-v1
+          key: ryzom-external-2022q2-v2
           restore-keys: |
             ryzom-external-2022q2-
 
