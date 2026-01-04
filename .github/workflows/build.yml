@@ -47,7 +47,7 @@ jobs:
         uses: actions/cache@v4
         with:
           path: C:/external
-          key: ryzom-external-2022q2-v6
+          key: ryzom-external-2022q2-v7
           restore-keys: |
             ryzom-external-2022q2-
 
@@ -114,12 +114,12 @@ jobs:
           # doesn't allow in INTERFACE_LINK_LIBRARIES)
           Write-Host "`nCleaning OpenSSL libs - keeping only release MSVC libs..."
           $keepLibs = @(
-            "C:/external/openssl/lib/VC/libcrypto64MD.lib",
-            "C:/external/openssl/lib/VC/libssl64MD.lib"
+            "libcrypto64MD.lib",
+            "libssl64MD.lib"
           )
-          # Delete all .lib files in openssl/lib recursively, except the ones we want
+          # Delete all .lib files in openssl/lib recursively, except the ones we want (by filename)
           Get-ChildItem "C:/external/openssl/lib" -Recurse -Filter "*.lib" | ForEach-Object {
-            if ($keepLibs -notcontains $_.FullName) {
+            if ($keepLibs -notcontains $_.Name) {
               Remove-Item $_.FullName -Force
               Write-Host "Removed: $($_.FullName)"
             } else {
@@ -281,7 +281,7 @@ jobs:
         uses: actions/cache/restore@v4
         with:
           path: C:/external
-          key: ryzom-external-2022q2-v6
+          key: ryzom-external-2022q2-v7
           restore-keys: |
             ryzom-external-2022q2-
 
@@ -414,7 +414,7 @@ jobs:
         uses: actions/cache/restore@v4
         with:
           path: C:/external
-          key: ryzom-external-2022q2-v6
+          key: ryzom-external-2022q2-v7
           restore-keys: |
             ryzom-external-2022q2-
 
