@@ -164,6 +164,12 @@ jobs:
           Get-ChildItem "C:/external/openssl/lib/VC" -Filter "*.lib" -ErrorAction SilentlyContinue
           Write-Host "`nLuabind lib contents:"
           Get-ChildItem "C:/external/luabind/lib" -Filter "*.lib" -ErrorAction SilentlyContinue
+          Write-Host "`nODE structure:"
+          if (Test-Path "C:/external/ode") {
+            Get-ChildItem "C:/external/ode" -Recurse -Include "*.h","*.lib" | Select-Object FullName
+          } else {
+            Write-Host "ODE directory not found!"
+          }
 
       # STEP 2: Build RyzomCore (requires external deps)
       - name: Cache RyzomCore
@@ -171,7 +177,7 @@ jobs:
         uses: actions/cache@v4
         with:
           path: C:/ryzomcore
-          key: ryzomcore-nel-v7
+          key: ryzomcore-nel-v8
           # No restore-keys fallback - we want exact match only to avoid stale caches
 
       - name: Build RyzomCore
@@ -218,7 +224,9 @@ jobs:
             -DLUABIND_LIBRARIES=C:/external/luabind/lib/luabind.lib `
             -DLIBXML2_INCLUDE_DIR=C:/external/libxml2/include/libxml2 `
             -DLIBXML2_LIBRARY=C:/external/libxml2/lib/libxml2.lib `
+            -DLIBXML2_LIBRARIES=C:/external/libxml2/lib/libxml2.lib `
             -DZLIB_INCLUDE_DIR=C:/external/zlib/include `
+            -DZLIB_LIBRARIES=C:/external/zlib/lib/zlib.lib `
             -DZLIB_LIBRARY=C:/external/zlib/lib/zlib.lib `
             -DPNG_PNG_INCLUDE_DIR=C:/external/libpng/include `
             -DPNG_LIBRARY=C:/external/libpng/lib/libpng16.lib `
@@ -293,7 +301,7 @@ jobs:
         uses: actions/cache/restore@v4
         with:
           path: C:/ryzomcore
-          key: ryzomcore-nel-v7
+          key: ryzomcore-nel-v8
           fail-on-cache-miss: true
 
       - name: Restore Dependencies Cache
@@ -425,7 +433,7 @@ jobs:
         uses: actions/cache/restore@v4
         with:
           path: C:/ryzomcore
-          key: ryzomcore-nel-v7
+          key: ryzomcore-nel-v8
           fail-on-cache-miss: true
 
       - name: Restore Dependencies Cache
