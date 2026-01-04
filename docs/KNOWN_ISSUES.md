@@ -154,7 +154,51 @@ Despite boxes extending 0.5 units in Z (from Z to Z+0.5), they behave as distinc
 
 ## Low Priority / Nice to Have
 
-### 8. Water Rendering Disabled
+### 8. /reset Command Broken
+**Status:** Not Started
+**Description:** The `/reset` command (Ctrl+F6) behaves identically to `/forceend` (Ctrl+F5) - it advances to the next level instead of restarting the current session.
+
+**Expected Behavior:** Reset should restart the current level from the beginning without advancing to the next map.
+
+**Actual Behavior:** Both commands advance to the next level in the rotation.
+
+**Related Files:**
+- `server/src/session_manager.cpp` - Contains the reset() function
+- `server/src/net_callbacks.cpp` - Command handling
+
+---
+
+### 9. Non-functional Debug Keys
+**Status:** Not Started
+**Description:** Several client debug keys don't work as expected.
+
+**Non-functional Keys:**
+| Key | Expected Action |
+|-----|-----------------|
+| Shift+F1 | Toggle start positions display |
+| F4 | Toggle editor mode |
+| Ctrl+F4 | Toggle debug info overlay |
+
+**Related Files:**
+- `client/src/controler.cpp` - Key handling
+- `client/src/editor_task.cpp` - Editor mode
+
+---
+
+### 10. Bot Commands Cause Server Crashes
+**Status:** Workaround Applied
+**Description:** The F5 (addBot) and F6 (kick bot) commands cause the server to crash when executed during gameplay.
+
+**Root Cause:** The bot system requires replay data and proper session state that isn't available during active gameplay.
+
+**Workaround Applied:** Both commands are now blocked at the server level in `net_callbacks.cpp`. Users receive a message explaining the command is disabled.
+
+**Files Modified:**
+- `server/src/net_callbacks.cpp:180-191` - Added blocks for addBot and kick commands
+
+---
+
+### 11. Water Rendering Disabled
 **Status:** Workaround Applied
 **Description:** Water rendering is currently disabled because the required water textures or shaders are missing.
 
@@ -162,7 +206,7 @@ Despite boxes extending 0.5 units in Z (from Z to Z+0.5), they behave as distinc
 
 ---
 
-### 9. Version Compatibility
+### 12. Version Compatibility
 **Status:** Ongoing
 **Description:** The current build uses v1.2.2a source code. Some features from v1.5.19 are not available.
 
@@ -186,6 +230,7 @@ Despite boxes extending 0.5 units in Z (from Z to Z+0.5), they behave as distinc
 - [x] **Fix level_team_mirror** (January 4, 2026) - Fixed camera direction and added fallback team detection from module names
 - [x] **Port level_team_classic** (January 4, 2026) - Replaced broken level_team with proper level_team_classic from original sources
 - [x] **All 32 playable levels tested** (January 4, 2026) - Every level verified working with scoring, friction, and slope steering fixes applied
+- [x] **Fixed F5/F6 server crashes** (January 4, 2026) - Blocked addBot and kick commands from clients to prevent crashes
 
 ---
 
