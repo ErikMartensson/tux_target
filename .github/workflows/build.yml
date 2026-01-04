@@ -41,13 +41,51 @@ jobs:
         with:
           arch: x64
 
-      # Cache RyzomCore (NeL libraries)
+      # STEP 1: Download external dependencies FIRST (RyzomCore needs these to build)
+      - name: Cache Dependencies
+        id: cache-deps
+        uses: actions/cache@v4
+        with:
+          path: C:/external
+          key: ryzom-external-2022q2-v1
+          restore-keys: |
+            ryzom-external-2022q2-
+
+      - name: Download External Dependencies
+        if: steps.cache-deps.outputs.cache-hit != 'true'
+        shell: pwsh
+        run: |
+          Write-Host "Downloading Ryzom external dependencies (1.3GB)..."
+          $url = "https://cdn.ryzom.dev/core/2022q2_external_v143_x64.7z"
+          $output = "C:/external.7z"
+
+          # Download with progress disabled for speed
+          $ProgressPreference = 'SilentlyContinue'
+          Invoke-WebRequest -Uri $url -OutFile $output -UseBasicParsing
+          $ProgressPreference = 'Continue'
+
+          Write-Host "Extracting dependencies to C:/external..."
+          7z x $output -oC:/ -y
+
+          # The archive extracts to "external" folder
+          if (!(Test-Path "C:/external")) {
+            Write-Error "External directory not found after extraction"
+            exit 1
+          }
+
+          # Cleanup archive to save space
+          Remove-Item $output
+
+          Write-Host "External dependencies ready at C:/external"
+          Get-ChildItem C:/external -Directory | Select-Object Name
+
+      # STEP 2: Build RyzomCore (requires external deps)
       - name: Cache RyzomCore
         id: cache-ryzomcore
         uses: actions/cache@v4
         with:
           path: C:/ryzomcore
-          key: ryzomcore-nel-v1
+          key: ryzomcore-nel-v2
           restore-keys: |
             ryzomcore-nel-
 
@@ -63,6 +101,7 @@ jobs:
           mkdir build
           cd build
 
+          # Point to external dependencies
           cmake .. -G "Visual Studio 17 2022" -A x64 `
             -DWITH_SOUND=ON `
             -DWITH_NEL=ON `
@@ -73,7 +112,9 @@ jobs:
             -DWITH_RYZOM_TOOLS=OFF `
             -DWITH_NELNS=OFF `
             -DWITH_SNOWBALLS=OFF `
-            -DWITH_STATIC=ON
+            -DWITH_STATIC=ON `
+            -DWITH_EXTERNAL=ON `
+            -DEXTERNAL_PATH=C:/external
 
           Write-Host "Building RyzomCore..."
           cmake --build . --config Release --parallel 4 --target nelmisc nelnet nel3d nelsound nelsnd_lowlevel nelgeorges nelligo
@@ -107,46 +148,6 @@ jobs:
           }
           Write-Host "RyzomCore build verified successfully - all $($required.Count) files present"
 
-      # Cache third-party dependencies
-      - name: Cache Dependencies
-        id: cache-deps
-        uses: actions/cache@v4
-        with:
-          path: C:/tux_target_deps
-          key: tux-deps-2022q2-v1
-          restore-keys: |
-            tux-deps-2022q2-
-
-      - name: Download Dependencies
-        if: steps.cache-deps.outputs.cache-hit != 'true'
-        shell: pwsh
-        run: |
-          Write-Host "Downloading Ryzom external dependencies (1.3GB)..."
-          $url = "https://cdn.ryzom.dev/core/2022q2_external_v143_x64.7z"
-          $output = "C:/external.7z"
-
-          # Download with progress
-          $ProgressPreference = 'SilentlyContinue'  # Faster download
-          Invoke-WebRequest -Uri $url -OutFile $output -UseBasicParsing
-          $ProgressPreference = 'Continue'
-
-          Write-Host "Extracting dependencies to C:/tux_target_deps..."
-          7z x $output -oC:/tux_target_deps -y
-
-          # Cleanup archive to save space
-          Remove-Item $output
-
-          # Verify key directories exist
-          $dirs = @("lua", "libxml2", "zlib", "curl", "openssl", "freetype", "libpng", "libjpeg", "ogg", "vorbis", "openal-soft", "ode")
-          foreach ($dir in $dirs) {
-            if (!(Test-Path "C:/tux_target_deps/$dir")) {
-              Write-Error "Missing dependency directory: $dir"
-              exit 1
-            }
-          }
-
-          Write-Host "Dependencies ready at C:/tux_target_deps"
-
   # ============================================
   # Build Client
   # ============================================
@@ -168,17 +169,17 @@ jobs:
         uses: actions/cache/restore@v4
         with:
           path: C:/ryzomcore
-          key: ryzomcore-nel-v1
+          key: ryzomcore-nel-v2
           restore-keys: |
             ryzomcore-nel-
 
       - name: Restore Dependencies Cache
         uses: actions/cache/restore@v4
         with:
-          path: C:/tux_target_deps
-          key: tux-deps-2022q2-v1
+          path: C:/external
+          key: ryzom-external-2022q2-v1
           restore-keys: |
-            tux-deps-2022q2-
+            ryzom-external-2022q2-
 
       - name: Configure CMake (Client)
         shell: pwsh
@@ -192,20 +193,20 @@ jobs:
             -DWITH_STATIC_LIBXML2=ON `
             -DWITH_STATIC_CURL=ON `
             -DNEL_PREFIX_PATH=C:/ryzomcore/build `
-            -DCMAKE_PREFIX_PATH=C:/tux_target_deps `
-            -DLUA_INCLUDE_DIR=C:/tux_target_deps/lua/include `
-            -DLUA_LIBRARIES=C:/tux_target_deps/lua/lib/lua.lib `
-            -DLIBXML2_INCLUDE_DIR=C:/tux_target_deps/libxml2/include/libxml2 `
-            -DLIBXML2_LIBRARY=C:/tux_target_deps/libxml2/lib/libxml2.lib `
-            -DZLIB_ROOT=C:/tux_target_deps/zlib `
-            -DCURL_ROOT=C:/tux_target_deps/curl `
-            -DOPENSSL_ROOT_DIR=C:/tux_target_deps/openssl `
-            -DFREETYPE_INCLUDE_DIRS=C:/tux_target_deps/freetype/include `
-            -DFREETYPE_LIBRARY=C:/tux_target_deps/freetype/lib/freetype.lib `
-            -DPNG_PNG_INCLUDE_DIR=C:/tux_target_deps/libpng/include `
-            -DPNG_LIBRARY=C:/tux_target_deps/libpng/lib/libpng16.lib `
-            -DJPEG_INCLUDE_DIR=C:/tux_target_deps/libjpeg/include `
-            -DJPEG_LIBRARY=C:/tux_target_deps/libjpeg/lib/jpeg.lib
+            -DCMAKE_PREFIX_PATH=C:/external `
+            -DLUA_INCLUDE_DIR=C:/external/lua/include `
+            -DLUA_LIBRARIES=C:/external/lua/lib/lua.lib `
+            -DLIBXML2_INCLUDE_DIR=C:/external/libxml2/include/libxml2 `
+            -DLIBXML2_LIBRARY=C:/external/libxml2/lib/libxml2.lib `
+            -DZLIB_ROOT=C:/external/zlib `
+            -DCURL_ROOT=C:/external/curl `
+            -DOPENSSL_ROOT_DIR=C:/external/openssl `
+            -DFREETYPE_INCLUDE_DIRS=C:/external/freetype/include `
+            -DFREETYPE_LIBRARY=C:/external/freetype/lib/freetype.lib `
+            -DPNG_PNG_INCLUDE_DIR=C:/external/libpng/include `
+            -DPNG_LIBRARY=C:/external/libpng/lib/libpng16.lib `
+            -DJPEG_INCLUDE_DIR=C:/external/libjpeg/include `
+            -DJPEG_LIBRARY=C:/external/libjpeg/lib/jpeg.lib
 
       - name: Build Client
         run: cmake --build build-client --config ${{ env.BUILD_TYPE }} --parallel 4
@@ -214,7 +215,7 @@ jobs:
         shell: pwsh
         run: |
           $releaseDir = "build-client/bin/${{ env.BUILD_TYPE }}"
-          $depsDir = "C:/tux_target_deps"
+          $depsDir = "C:/external"
 
           # Copy NeL drivers
           if (Test-Path "C:/ryzomcore/build/bin/Release/nel_drv_opengl_win_r.dll") {
@@ -301,17 +302,17 @@ jobs:
         uses: actions/cache/restore@v4
         with:
           path: C:/ryzomcore
-          key: ryzomcore-nel-v1
+          key: ryzomcore-nel-v2
           restore-keys: |
             ryzomcore-nel-
 
       - name: Restore Dependencies Cache
         uses: actions/cache/restore@v4
         with:
-          path: C:/tux_target_deps
-          key: tux-deps-2022q2-v1
+          path: C:/external
+          key: ryzom-external-2022q2-v1
           restore-keys: |
-            tux-deps-2022q2-
+            ryzom-external-2022q2-
 
       - name: Configure CMake (Server)
         shell: pwsh
@@ -322,20 +323,20 @@ jobs:
             -DBUILD_CLIENT=OFF `
             -DBUILD_SERVER=ON `
             -DNEL_PREFIX_PATH=C:/ryzomcore/build `
-            -DCMAKE_PREFIX_PATH=C:/tux_target_deps `
-            -DLUA_INCLUDE_DIR=C:/tux_target_deps/lua/include `
-            -DLUA_LIBRARIES=C:/tux_target_deps/lua/lib/lua.lib `
-            -DLIBXML2_INCLUDE_DIR=C:/tux_target_deps/libxml2/include/libxml2 `
-            -DLIBXML2_LIBRARY=C:/tux_target_deps/libxml2/lib/libxml2.lib `
-            -DZLIB_ROOT=C:/tux_target_deps/zlib `
-            -DFREETYPE_INCLUDE_DIRS=C:/tux_target_deps/freetype/include `
-            -DFREETYPE_LIBRARY=C:/tux_target_deps/freetype/lib/freetype.lib `
-            -DPNG_PNG_INCLUDE_DIR=C:/tux_target_deps/libpng/include `
-            -DPNG_LIBRARY=C:/tux_target_deps/libpng/lib/libpng16.lib `
-            -DJPEG_INCLUDE_DIR=C:/tux_target_deps/libjpeg/include `
-            -DJPEG_LIBRARY=C:/tux_target_deps/libjpeg/lib/jpeg.lib `
-            -DODE_INCLUDE_DIR=C:/tux_target_deps/ode/include `
-            -DODE_LIBRARY=C:/tux_target_deps/ode/lib/ode_doubles.lib
+            -DCMAKE_PREFIX_PATH=C:/external `
+            -DLUA_INCLUDE_DIR=C:/external/lua/include `
+            -DLUA_LIBRARIES=C:/external/lua/lib/lua.lib `
+            -DLIBXML2_INCLUDE_DIR=C:/external/libxml2/include/libxml2 `
+            -DLIBXML2_LIBRARY=C:/external/libxml2/lib/libxml2.lib `
+            -DZLIB_ROOT=C:/external/zlib `
+            -DFREETYPE_INCLUDE_DIRS=C:/external/freetype/include `
+            -DFREETYPE_LIBRARY=C:/external/freetype/lib/freetype.lib `
+            -DPNG_PNG_INCLUDE_DIR=C:/external/libpng/include `
+            -DPNG_LIBRARY=C:/external/libpng/lib/libpng16.lib `
+            -DJPEG_INCLUDE_DIR=C:/external/libjpeg/include `
+            -DJPEG_LIBRARY=C:/external/libjpeg/lib/jpeg.lib `
+            -DODE_INCLUDE_DIR=C:/external/ode/include `
+            -DODE_LIBRARY=C:/external/ode/lib/ode_doubles.lib
 
       - name: Build Server
         run: cmake --build build-server --config ${{ env.BUILD_TYPE }} --parallel 4
@@ -344,7 +345,7 @@ jobs:
         shell: pwsh
         run: |
           $releaseDir = "build-server/bin/${{ env.BUILD_TYPE }}"
-          $depsDir = "C:/tux_target_deps"
+          $depsDir = "C:/external"
 
           # Copy runtime DLLs from dependencies
           $dllSources = @(
