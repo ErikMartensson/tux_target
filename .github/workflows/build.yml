@@ -171,6 +171,7 @@ jobs:
             -DLUA_LIBRARIES=C:/external/lua/lib/lua51.lib `
             -DLUABIND_INCLUDE_DIR=C:/external/luabind/include `
             -DLUABIND_LIBRARY=C:/external/luabind/lib/luabind.lib `
+            -DLUABIND_LIBRARIES=C:/external/luabind/lib/luabind.lib `
             -DLIBXML2_INCLUDE_DIR=C:/external/libxml2/include/libxml2 `
             -DLIBXML2_LIBRARY=C:/external/libxml2/lib/libxml2_a.lib `
             -DZLIB_INCLUDE_DIR=C:/external/zlib/include `
