@@ -172,13 +172,17 @@ jobs:
         with:
           path: C:/ryzomcore
           key: ryzomcore-nel-v7
-          restore-keys: |
-            ryzomcore-nel-
+          # No restore-keys fallback - we want exact match only to avoid stale caches
 
       - name: Build RyzomCore
         if: steps.cache-ryzomcore.outputs.cache-hit != 'true'
         shell: pwsh
         run: |
+          # Clean up any stale directory from failed cache restore
+          if (Test-Path "C:/ryzomcore") {
+            Remove-Item -Recurse -Force "C:/ryzomcore"
+          }
+
           Write-Host "Cloning RyzomCore..."
           git clone --depth 1 https://github.com/ryzom/ryzomcore.git C:/ryzomcore
 
@@ -290,8 +294,7 @@ jobs:
         with:
           path: C:/ryzomcore
           key: ryzomcore-nel-v7
-          restore-keys: |
-            ryzomcore-nel-
+          fail-on-cache-miss: true
 
       - name: Restore Dependencies Cache
         uses: actions/cache/restore@v4
@@ -423,8 +426,7 @@ jobs:
         with:
           path: C:/ryzomcore
           key: ryzomcore-nel-v7
-          restore-keys: |
-            ryzomcore-nel-
+          fail-on-cache-miss: true
 
       - name: Restore Dependencies Cache
         uses: actions/cache/restore@v4
