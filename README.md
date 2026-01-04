@@ -48,6 +48,12 @@ We're currently running **version 1.2.2a** (from this repository's source code) 
 
 The original v1.5.19 server source is unavailable, so we're starting with the v1.2.2a codebase we have and will enhance it over time.
 
+### Reference Source Code
+
+The v1.5.19 client source code is preserved in [`reference/mtp-target-v1.5.19/`](reference/mtp-target-v1.5.19/) for comparison and asset extraction. This includes shapes and textures for space/sun/city themes that are missing from v1.2.2a.
+
+**Original download:** [Internet Archive](https://web.archive.org/web/20130630212354/http://www.mtp-target.org/files/mtp-target-src.19.tar.bz2)
+
 ---
 
 ## Current Status

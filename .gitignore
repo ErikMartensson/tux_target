@@ -17,12 +17,8 @@ lib/
 .idea/
 *.code-workspace
 
-# Source archives (using newer version)
+# Source archives (reference version already extracted to reference/)
 mtp-target-src.19.tar.bz2
-mtp-target-src/
-
-# Session/continuation files (AI-specific)
-CONTINUATION_PROMPT.md
 
 # Compiled binaries
 *.exe
