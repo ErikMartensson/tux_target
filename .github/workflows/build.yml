@@ -47,7 +47,7 @@ jobs:
         uses: actions/cache@v4
         with:
           path: C:/external
-          key: ryzom-external-2022q2-v9
+          key: ryzom-external-2022q2-v10
           restore-keys: |
             ryzom-external-2022q2-
 
@@ -165,7 +165,9 @@ jobs:
 
           Write-Host "Installing ODE via vcpkg..."
           # vcpkg is pre-installed on GitHub Actions runners
-          vcpkg install ode:x64-windows-static
+          # Use x64-windows-static-md triplet: static library with dynamic CRT (/MD)
+          # This matches how tux_target is built (dynamic CRT)
+          vcpkg install ode:x64-windows-static-md
 
           # Copy to C:/external/ode for consistency
           $vcpkgRoot = $env:VCPKG_INSTALLATION_ROOT
@@ -173,7 +175,7 @@ jobs:
             $vcpkgRoot = "C:\vcpkg"
           }
 
-          $installedDir = "$vcpkgRoot\installed\x64-windows-static"
+          $installedDir = "$vcpkgRoot\installed\x64-windows-static-md"
           if (Test-Path $installedDir) {
             New-Item -ItemType Directory -Force -Path "C:/external/ode/include"
             New-Item -ItemType Directory -Force -Path "C:/external/ode/lib"
@@ -184,10 +186,16 @@ jobs:
               Write-Host "Copied ODE headers"
             }
 
-            # Copy libraries - ODE can be ode.lib or ode_double.lib depending on build config
+            # Copy libraries - ODE names vary: ode.lib, ode_double.lib, ode_doubles.lib
+            # Copy all found libs and create a consistent name (ode_doubles.lib) for our CMake
             Get-ChildItem "$installedDir/lib" -Filter "ode*.lib" | ForEach-Object {
               Copy-Item $_.FullName "C:/external/ode/lib/"
               Write-Host "Copied: $($_.Name)"
+              # Also copy as ode_doubles.lib if it has a different name
+              if ($_.Name -ne "ode_doubles.lib") {
+                Copy-Item $_.FullName "C:/external/ode/lib/ode_doubles.lib"
+                Write-Host "Also copied as: ode_doubles.lib"
+              }
             }
 
             Write-Host "`nODE installation complete:"
@@ -351,15 +359,35 @@ jobs:
         uses: actions/cache/restore@v4
         with:
           path: C:/external
-          key: ryzom-external-2022q2-v9
+          key: ryzom-external-2022q2-v10
           restore-keys: |
             ryzom-external-2022q2-
+
+      - name: Verify Library Paths
+        shell: pwsh
+        run: |
+          Write-Host "=== Verifying library paths for client build ==="
+          $libs = @(
+            "C:/external/libxml2/lib/libxml2.lib",
+            "C:/external/zlib/lib/zlib.lib",
+            "C:/external/lua/lib/lua.lib",
+            "C:/external/curl/lib/libcurl_imp.lib"
+          )
+          foreach ($lib in $libs) {
+            if (Test-Path $lib) {
+              Write-Host "[OK] $lib"
+            } else {
+              Write-Error "[MISSING] $lib"
+            }
+          }
 
       - name: Configure CMake (Client)
         shell: pwsh
         run: |
           mkdir build-client
           cd build-client
+          # Use :FILEPATH type to ensure CMake treats these as cache variables
+          # that won't be overwritten by find modules
           cmake .. -G "Visual Studio 17 2022" -A x64 `
             -DBUILD_CLIENT=ON `
             -DBUILD_SERVER=OFF `
@@ -368,23 +396,24 @@ jobs:
             -DWITH_STATIC_CURL=ON `
             -DNEL_PREFIX_PATH=C:/ryzomcore/build `
             -DCMAKE_PREFIX_PATH=C:/external `
-            -DLUA_INCLUDE_DIR=C:/external/lua/include `
-            -DLUA_LIBRARIES=C:/external/lua/lib/lua.lib `
-            -DLIBXML2_INCLUDE_DIR=C:/external/libxml2/include/libxml2 `
-            -DLIBXML2_LIBRARY=C:/external/libxml2/lib/libxml2.lib `
+            -DLUA_INCLUDE_DIR:PATH=C:/external/lua/include `
+            -DLUA_LIBRARIES:FILEPATH=C:/external/lua/lib/lua.lib `
+            -DLIBXML2_INCLUDE_DIR:PATH=C:/external/libxml2/include/libxml2 `
+            -DLIBXML2_LIBRARY:FILEPATH=C:/external/libxml2/lib/libxml2.lib `
             -DZLIB_ROOT=C:/external/zlib `
+            -DZLIB_LIBRARY:FILEPATH=C:/external/zlib/lib/zlib.lib `
             -DCURL_ROOT=C:/external/curl `
-            -DCURL_LIBRARIES=C:/external/curl/lib/libcurl_imp.lib `
+            -DCURL_LIBRARIES:FILEPATH=C:/external/curl/lib/libcurl_imp.lib `
             -DOPENSSL_ROOT_DIR=C:/external/openssl `
-            -DFREETYPE_INCLUDE_DIRS=C:/external/freetype/include `
-            -DFREETYPE_LIBRARY=C:/external/freetype/lib/freetype.lib `
-            -DPNG_PNG_INCLUDE_DIR=C:/external/libpng/include `
-            -DPNG_LIBRARY=C:/external/libpng/lib/libpng16.lib `
-            -DJPEG_INCLUDE_DIR=C:/external/libjpeg/include `
-            -DJPEG_LIBRARY=C:/external/libjpeg/lib/jpeg.lib `
-            -DVORBIS_LIBRARY=C:/external/vorbis/lib/vorbis.lib `
-            -DVORBISFILE_LIBRARY=C:/external/vorbis/lib/vorbisfile.lib `
-            -DOGG_LIBRARY=C:/external/ogg/lib/ogg.lib
+            -DFREETYPE_INCLUDE_DIRS:PATH=C:/external/freetype/include `
+            -DFREETYPE_LIBRARY:FILEPATH=C:/external/freetype/lib/freetype.lib `
+            -DPNG_PNG_INCLUDE_DIR:PATH=C:/external/libpng/include `
+            -DPNG_LIBRARY:FILEPATH=C:/external/libpng/lib/libpng16.lib `
+            -DJPEG_INCLUDE_DIR:PATH=C:/external/libjpeg/include `
+            -DJPEG_LIBRARY:FILEPATH=C:/external/libjpeg/lib/jpeg.lib `
+            -DVORBIS_LIBRARY:FILEPATH=C:/external/vorbis/lib/vorbis.lib `
+            -DVORBISFILE_LIBRARY:FILEPATH=C:/external/vorbis/lib/vorbisfile.lib `
+            -DOGG_LIBRARY:FILEPATH=C:/external/ogg/lib/ogg.lib
 
       - name: Build Client
         run: cmake --build build-client --config ${{ env.BUILD_TYPE }} --parallel 4
@@ -487,11 +516,11 @@ jobs:
         uses: actions/cache/restore@v4
         with:
           path: C:/external
-          key: ryzom-external-2022q2-v9
+          key: ryzom-external-2022q2-v10
           restore-keys: |
             ryzom-external-2022q2-
 
-      - name: Verify ODE Headers
+      - name: Verify ODE Installation
         shell: pwsh
         run: |
           Write-Host "=== Checking ODE directory structure ==="
@@ -517,6 +546,17 @@ jobs:
               Get-ChildItem "C:/external/ode" -Recurse -Filter "ode.h" -ErrorAction SilentlyContinue |
                 Select-Object FullName |
                 ForEach-Object { Write-Host "Found: $($_.FullName)" }
+            }
+
+            # Check for ODE library and determine correct name
+            Write-Host "`nLooking for ODE library..."
+            $odeLib = Get-ChildItem "C:/external/ode/lib" -Filter "ode*.lib" -ErrorAction SilentlyContinue | Select-Object -First 1
+            if ($odeLib) {
+              Write-Host "[OK] Found ODE library: $($odeLib.Name)"
+              # Set environment variable for CMake
+              echo "ODE_LIBRARY_NAME=$($odeLib.Name)" >> $env:GITHUB_ENV
+            } else {
+              Write-Error "[MISSING] No ODE library found in C:/external/ode/lib"
             }
           } else {
             Write-Error "ODE directory not found at C:/external/ode"

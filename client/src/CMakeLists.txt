@@ -190,8 +190,9 @@ IF(WIN32)
 									optimized ${NELLIGO_LIBRARY}	debug ${NELLIGO_LIBRARY_DEBUG}
 									optimized ${NELSOUND_LIBRARY}	debug ${NELSOUND_LIBRARY_DEBUG}
 									optimized ${NELSNDDRV_LIBRARY}	debug ${NELSNDDRV_LIBRARY_DEBUG}
-									# Base dependencies last (resolve symbols for NeL)
+									# Base dependencies (libxml2 needs zlib)
 									${LIBXML2_LIBRARY}
+									${ZLIB_LIBRARY}
 									${LUA_LIBRARIES}
 									${CURL_LIBRARIES}
 									${SSLEAY_LIBRARY}
