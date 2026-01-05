@@ -257,8 +257,10 @@ jobs:
           # Use the exact CMAKE_PREFIX_PATH from cmake_prefix_path_ryz.txt
           $cmakePrefixPath = "C:/external/zlib;C:/external/libpng;C:/external/libjpeg;C:/external/curl;C:/external/openssl;C:/external/freetype;C:/external/ogg;C:/external/vorbis;C:/external/openal-soft;C:/external/boost;C:/external/lua;C:/external/luabind;C:/external/libxml2"
 
+          # Ensure Ninja is in PATH (choco install may not update current session)
+          $env:PATH = "C:\ProgramData\chocolatey\bin;$env:PATH"
+
           # Use Ninja generator - it respects compile flags better than VS generator
-          # and CFLAGS/CXXFLAGS environment variables work correctly
           cmake .. -G Ninja `
             -DCMAKE_BUILD_TYPE=Release `
             -DCMAKE_C_FLAGS="/DLIBXML_STATIC" `
