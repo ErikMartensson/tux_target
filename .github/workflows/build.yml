@@ -544,7 +544,7 @@ jobs:
             -DJPEG_INCLUDE_DIR=C:/external/libjpeg/include `
             -DJPEG_LIBRARY=C:/external/libjpeg/lib/jpeg.lib `
             -DODE_INCLUDE_DIR=C:/external/ode/include `
-            -DODE_LIBRARY=C:/external/ode/lib/ode.lib
+            -DODE_LIBRARY=C:/external/ode/lib/ode_doubles.lib
 
       - name: Verify CMake Server Config
         shell: pwsh

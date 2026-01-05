@@ -182,7 +182,15 @@ ENDIF()
 
 IF(WIN32)
 	TARGET_LINK_LIBRARIES(tux-target
-									# Base dependencies first
+									# NeL libraries first (they depend on base dependencies)
+									optimized ${NELMISC_LIBRARY}	debug ${NELMISC_LIBRARY_DEBUG}
+									optimized ${NELNET_LIBRARY}		debug ${NELNET_LIBRARY_DEBUG}
+									optimized ${NEL3D_LIBRARY}		debug ${NEL3D_LIBRARY_DEBUG}
+									optimized ${NELGEORGES_LIBRARY}	debug ${NELGEORGES_LIBRARY_DEBUG}
+									optimized ${NELLIGO_LIBRARY}	debug ${NELLIGO_LIBRARY_DEBUG}
+									optimized ${NELSOUND_LIBRARY}	debug ${NELSOUND_LIBRARY_DEBUG}
+									optimized ${NELSNDDRV_LIBRARY}	debug ${NELSNDDRV_LIBRARY_DEBUG}
+									# Base dependencies last (resolve symbols for NeL)
 									${LIBXML2_LIBRARY}
 									${LUA_LIBRARIES}
 									${CURL_LIBRARIES}
@@ -194,14 +202,6 @@ IF(WIN32)
 									${PNG_LIBRARIES}
 									${FREETYPE_LIBRARY}
 									${JPEG_LIBRARY}
-									# NeL libraries that depend on the above
-									optimized ${NELMISC_LIBRARY}	debug ${NELMISC_LIBRARY_DEBUG}
-									optimized ${NELNET_LIBRARY}		debug ${NELNET_LIBRARY_DEBUG}
-									optimized ${NEL3D_LIBRARY}		debug ${NEL3D_LIBRARY_DEBUG}
-									optimized ${NELGEORGES_LIBRARY}	debug ${NELGEORGES_LIBRARY_DEBUG}
-									optimized ${NELLIGO_LIBRARY}	debug ${NELLIGO_LIBRARY_DEBUG}
-									optimized ${NELSOUND_LIBRARY}	debug ${NELSOUND_LIBRARY_DEBUG}
-									optimized ${NELSNDDRV_LIBRARY}	debug ${NELSNDDRV_LIBRARY_DEBUG}
 									${PLATFORM_LINKFLAGS}
 									ws2_32.lib)
 
