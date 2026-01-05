@@ -51,7 +51,7 @@ jobs:
         uses: actions/cache@v4
         with:
           path: C:/external
-          key: ryzom-external-2022q2-v13
+          key: ryzom-external-2022q2-v14
 
       - name: Download External Dependencies
         if: steps.cache-deps.outputs.cache-hit != 'true'
@@ -158,9 +158,10 @@ jobs:
             Remove-Item -Recurse -Force -ErrorAction SilentlyContinue
 
           # Remove all debug libraries (*d.lib, *_d.lib, *_debug.lib)
+          # Use -cmatch for case-sensitive matching to avoid removing libs like libcrypto64MD.lib
           Write-Host "Removing debug libraries..."
           Get-ChildItem "C:/external" -Recurse -Filter "*.lib" -ErrorAction SilentlyContinue |
-            Where-Object { $_.Name -match "d\.lib$|_d\.lib$|_debug\.lib$|Debug\.lib$" } |
+            Where-Object { $_.Name -cmatch "d\.lib$|_d\.lib$|_debug\.lib$" } |
             ForEach-Object {
               Remove-Item $_.FullName -Force -ErrorAction SilentlyContinue
               Write-Host "Removed debug lib: $($_.Name)"
@@ -529,7 +530,7 @@ jobs:
         uses: actions/cache/restore@v4
         with:
           path: C:/external
-          key: ryzom-external-2022q2-v13
+          key: ryzom-external-2022q2-v14
           restore-keys: |
             ryzom-external-2022q2-
 
@@ -711,7 +712,7 @@ jobs:
         uses: actions/cache/restore@v4
         with:
           path: C:/external
-          key: ryzom-external-2022q2-v13
+          key: ryzom-external-2022q2-v14
           restore-keys: |
             ryzom-external-2022q2-
 
