@@ -227,7 +227,7 @@ jobs:
         uses: actions/cache@v4
         with:
           path: C:/ryzomcore
-          key: ryzomcore-nel-v12
+          key: ryzomcore-nel-v13
           # No restore-keys fallback - we want exact match only to avoid stale caches
 
       - name: Build RyzomCore
@@ -247,11 +247,6 @@ jobs:
           mkdir build
           cd build
 
-          # Set LIBXML_STATIC via environment variables (more reliable than CMAKE_C_FLAGS)
-          # This ensures the define is used during compilation
-          $env:CFLAGS = "/DLIBXML_STATIC"
-          $env:CXXFLAGS = "/DLIBXML_STATIC"
-
           # Point to external dependencies via CMAKE_PREFIX_PATH
           # (Don't use WITH_EXTERNAL as it requires a CMakeLists.txt in external dir)
           #
@@ -259,7 +254,12 @@ jobs:
           # Use the exact CMAKE_PREFIX_PATH from cmake_prefix_path_ryz.txt
           $cmakePrefixPath = "C:/external/zlib;C:/external/libpng;C:/external/libjpeg;C:/external/curl;C:/external/openssl;C:/external/freetype;C:/external/ogg;C:/external/vorbis;C:/external/openal-soft;C:/external/boost;C:/external/lua;C:/external/luabind;C:/external/libxml2"
 
-          cmake .. -G "Visual Studio 17 2022" -A x64 `
+          # Use Ninja generator - it respects compile flags better than VS generator
+          # and CFLAGS/CXXFLAGS environment variables work correctly
+          cmake .. -G Ninja `
+            -DCMAKE_BUILD_TYPE=Release `
+            -DCMAKE_C_FLAGS="/DLIBXML_STATIC" `
+            -DCMAKE_CXX_FLAGS="/DLIBXML_STATIC" `
             -DWITH_SOUND=ON `
             -DWITH_NEL=ON `
             -DWITH_NEL_TOOLS=OFF `
@@ -305,23 +305,25 @@ jobs:
             -DCMAKE_FIND_USE_SYSTEM_ENVIRONMENT_PATH=FALSE
 
           Write-Host "Building RyzomCore..."
-          cmake --build . --config Release --parallel 4 --target nelmisc nelnet nel3d nelsound nelsnd_lowlevel nelgeorges nelligo
-          cmake --build . --config Release --parallel 2 --target nel_drv_opengl_win nel_drv_openal_win
+          # Ninja doesn't need --config, build type is set at configure time
+          cmake --build . --parallel 4 --target nelmisc nelnet nel3d nelsound nelsnd_lowlevel nelgeorges nelligo
+          cmake --build . --parallel 2 --target nel_drv_opengl_win nel_drv_openal_win
 
       - name: Verify RyzomCore Build
         if: steps.cache-ryzomcore.outputs.cache-hit != 'true'
         shell: pwsh
         run: |
+          # Ninja outputs to lib/ and bin/ directly (no Release subdirectory)
           $required = @(
-            "C:/ryzomcore/build/lib/Release/nelmisc_r.lib",
-            "C:/ryzomcore/build/lib/Release/nel3d_r.lib",
-            "C:/ryzomcore/build/lib/Release/nelnet_r.lib",
-            "C:/ryzomcore/build/lib/Release/nelsound_r.lib",
-            "C:/ryzomcore/build/lib/Release/nelsnd_lowlevel_r.lib",
-            "C:/ryzomcore/build/lib/Release/nelgeorges_r.lib",
-            "C:/ryzomcore/build/lib/Release/nelligo_r.lib",
-            "C:/ryzomcore/build/bin/Release/nel_drv_opengl_win_r.dll",
-            "C:/ryzomcore/build/bin/Release/nel_drv_openal_win_r.dll"
+            "C:/ryzomcore/build/lib/nelmisc_r.lib",
+            "C:/ryzomcore/build/lib/nel3d_r.lib",
+            "C:/ryzomcore/build/lib/nelnet_r.lib",
+            "C:/ryzomcore/build/lib/nelsound_r.lib",
+            "C:/ryzomcore/build/lib/nelsnd_lowlevel_r.lib",
+            "C:/ryzomcore/build/lib/nelgeorges_r.lib",
+            "C:/ryzomcore/build/lib/nelligo_r.lib",
+            "C:/ryzomcore/build/bin/nel_drv_opengl_win_r.dll",
+            "C:/ryzomcore/build/bin/nel_drv_openal_win_r.dll"
           )
           $missing = @()
           foreach ($file in $required) {
@@ -357,7 +359,7 @@ jobs:
         uses: actions/cache/restore@v4
         with:
           path: C:/ryzomcore
-          key: ryzomcore-nel-v12
+          key: ryzomcore-nel-v13
           fail-on-cache-miss: true
 
       - name: Restore Dependencies Cache
@@ -429,12 +431,12 @@ jobs:
           $releaseDir = "build-client/bin/${{ env.BUILD_TYPE }}"
           $depsDir = "C:/external"
 
-          # Copy NeL drivers
-          if (Test-Path "C:/ryzomcore/build/bin/Release/nel_drv_opengl_win_r.dll") {
-            Copy-Item "C:/ryzomcore/build/bin/Release/nel_drv_opengl_win_r.dll" "$releaseDir/"
+          # Copy NeL drivers (Ninja outputs to bin/ directly, no Release subdirectory)
+          if (Test-Path "C:/ryzomcore/build/bin/nel_drv_opengl_win_r.dll") {
+            Copy-Item "C:/ryzomcore/build/bin/nel_drv_opengl_win_r.dll" "$releaseDir/"
           }
-          if (Test-Path "C:/ryzomcore/build/bin/Release/nel_drv_openal_win_r.dll") {
-            Copy-Item "C:/ryzomcore/build/bin/Release/nel_drv_openal_win_r.dll" "$releaseDir/"
+          if (Test-Path "C:/ryzomcore/build/bin/nel_drv_openal_win_r.dll") {
+            Copy-Item "C:/ryzomcore/build/bin/nel_drv_openal_win_r.dll" "$releaseDir/"
           }
 
           # Copy runtime DLLs from dependencies
@@ -514,7 +516,7 @@ jobs:
         uses: actions/cache/restore@v4
         with:
           path: C:/ryzomcore
-          key: ryzomcore-nel-v12
+          key: ryzomcore-nel-v13
           fail-on-cache-miss: true
 
       - name: Restore Dependencies Cache
