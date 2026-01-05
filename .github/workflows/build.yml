@@ -230,7 +230,7 @@ jobs:
         uses: actions/cache@v4
         with:
           path: C:/ryzomcore
-          key: ryzomcore-nel-v15
+          key: ryzomcore-nel-v16
           # No restore-keys fallback - we want exact match only to avoid stale caches
 
       - name: Build RyzomCore
@@ -271,13 +271,18 @@ jobs:
           }
           Write-Host "Found cl.exe at: $clPath"
 
+          # Set LIBXML_STATIC via environment variables - more reliable than CMAKE_*_FLAGS
+          # CMake uses these to initialize CMAKE_C_FLAGS and CMAKE_CXX_FLAGS
+          $env:CFLAGS = "/DLIBXML_STATIC"
+          $env:CXXFLAGS = "/DLIBXML_STATIC"
+          Write-Host "Set CFLAGS=$env:CFLAGS"
+          Write-Host "Set CXXFLAGS=$env:CXXFLAGS"
+
           cmake .. -G Ninja `
             -DCMAKE_MAKE_PROGRAM="$ninjaPath" `
             -DCMAKE_C_COMPILER="$clPath" `
             -DCMAKE_CXX_COMPILER="$clPath" `
             -DCMAKE_BUILD_TYPE=Release `
-            -DCMAKE_C_FLAGS="/DLIBXML_STATIC" `
-            -DCMAKE_CXX_FLAGS="/DLIBXML_STATIC" `
             -DWITH_SOUND=ON `
             -DWITH_NEL=ON `
             -DWITH_NEL_TOOLS=OFF `
@@ -379,7 +384,7 @@ jobs:
         uses: actions/cache/restore@v4
         with:
           path: C:/ryzomcore
-          key: ryzomcore-nel-v15
+          key: ryzomcore-nel-v16
           fail-on-cache-miss: true
 
       - name: Restore Dependencies Cache
@@ -536,7 +541,7 @@ jobs:
         uses: actions/cache/restore@v4
         with:
           path: C:/ryzomcore
-          key: ryzomcore-nel-v15
+          key: ryzomcore-nel-v16
           fail-on-cache-miss: true
 
       - name: Restore Dependencies Cache
