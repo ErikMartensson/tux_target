@@ -1,9 +1,13 @@
 @echo off
 REM
-REM Build Tux Target Client Only (Windows)
+REM Build Tux Target Client (Windows)
 REM
-REM This script builds only the game client to a separate build-client directory.
-REM Usage: scripts\build-client.bat [--clean] [--skip-post-build]
+REM Prerequisites: Run setup-deps.bat first to install dependencies
+REM
+REM Usage:
+REM   scripts\build-client.bat              - Build client
+REM   scripts\build-client.bat --clean      - Clean build
+REM   scripts\build-client.bat --skip-post-build  - Skip post-build setup
 REM
 
 setlocal enabledelayedexpansion
@@ -29,6 +33,21 @@ echo Project directory: %PROJECT_DIR%
 echo Build directory:   %BUILD_DIR%
 echo.
 
+REM Check dependencies (default: deps/ directory in repo)
+set DEPS_PATH=%PROJECT_DIR%\deps
+if defined TUXDEPS_PATH set DEPS_PATH=%TUXDEPS_PATH%
+echo Dependencies path: %DEPS_PATH%
+
+if not exist "%DEPS_PATH%\lua\lib\lua.lib" (
+    echo.
+    echo ERROR: Dependencies not found at %DEPS_PATH%
+    echo Please run: scripts\setup-deps.bat
+    echo.
+    exit /b 1
+)
+echo Dependencies: OK
+echo.
+
 REM Clean build if requested
 if %CLEAN_BUILD%==1 (
     echo Cleaning build directory...
@@ -45,57 +64,42 @@ if "%NUM_CORES%"=="" set NUM_CORES=4
 echo Using %NUM_CORES% CPU cores for build
 echo.
 
-REM Set dependency paths (check environment variables first, then use defaults)
-if "%NEL_PREFIX_PATH%"=="" (
-    set NEL_PREFIX_PATH=C:/ryzomcore/build
-)
-if "%TUXDEPS_PREFIX_PATH%"=="" (
-    set TUXDEPS_PREFIX_PATH=C:/tux_target_deps
-)
-
-echo Dependency configuration:
-echo   NEL_PREFIX_PATH: %NEL_PREFIX_PATH%
-echo   TUXDEPS_PREFIX_PATH: %TUXDEPS_PREFIX_PATH%
+REM Set NeL path (check environment variable first, then use default)
+set NEL_PATH=C:/ryzomcore/build
+if defined NEL_PREFIX_PATH set NEL_PATH=%NEL_PREFIX_PATH%
+echo NeL path: %NEL_PATH%
 echo.
 
-REM Configure CMake with explicit paths for dependencies
-echo Configuring CMake (Client only)...
+REM Configure CMake using shared configuration
+echo Configuring CMake (Client)...
 cmake .. ^
     -G "Visual Studio 17 2022" ^
     -DBUILD_CLIENT=ON ^
     -DBUILD_SERVER=OFF ^
     -DWITH_STATIC=ON ^
-    -DWITH_STATIC_LIBXML2=ON ^
     -DWITH_STATIC_CURL=ON ^
-    -DNEL_PREFIX_PATH=%NEL_PREFIX_PATH% ^
-    -DCMAKE_PREFIX_PATH=%TUXDEPS_PREFIX_PATH% ^
-    -DCMAKE_LIBRARY_PATH=%NEL_PREFIX_PATH%/lib/Release;%TUXDEPS_PREFIX_PATH%/libpng/lib;%TUXDEPS_PREFIX_PATH%/libjpeg/lib;%TUXDEPS_PREFIX_PATH%/freetype/lib ^
-    -DCMAKE_INCLUDE_PATH=C:/ryzomcore/nel/include;%TUXDEPS_PREFIX_PATH%/libpng/include;%TUXDEPS_PREFIX_PATH%/libjpeg/include;%TUXDEPS_PREFIX_PATH%/freetype/include ^
-    -DNEL_INCLUDE_DIR=C:/ryzomcore/nel/include ^
-    -DNEL_LIBRARY_DIR=%NEL_PREFIX_PATH%/lib/Release ^
-    -DNELMISC_LIBRARY=%NEL_PREFIX_PATH%/lib/Release/nelmisc_r.lib ^
-    -DNELMISC_LIBRARY_DEBUG=%NEL_PREFIX_PATH%/lib/Release/nelmisc_r.lib ^
-    -DNEL3D_LIBRARY=%NEL_PREFIX_PATH%/lib/Release/nel3d_r.lib ^
-    -DNEL3D_LIBRARY_DEBUG=%NEL_PREFIX_PATH%/lib/Release/nel3d_r.lib ^
-    -DNELSOUND_LIBRARY=%NEL_PREFIX_PATH%/lib/Release/nelsound_r.lib ^
-    -DNELSOUND_LIBRARY_DEBUG=%NEL_PREFIX_PATH%/lib/Release/nelsound_r.lib ^
-    -DNELSNDDRV_LIBRARY=%NEL_PREFIX_PATH%/lib/Release/nelsnd_lowlevel_r.lib ^
-    -DNELSNDDRV_LIBRARY_DEBUG=%NEL_PREFIX_PATH%/lib/Release/nelsnd_lowlevel_r.lib ^
-    -DNELGEORGES_LIBRARY=%NEL_PREFIX_PATH%/lib/Release/nelgeorges_r.lib ^
-    -DNELGEORGES_LIBRARY_DEBUG=%NEL_PREFIX_PATH%/lib/Release/nelgeorges_r.lib ^
-    -DNELLIGO_LIBRARY=%NEL_PREFIX_PATH%/lib/Release/nelligo_r.lib ^
-    -DNELLIGO_LIBRARY_DEBUG=%NEL_PREFIX_PATH%/lib/Release/nelligo_r.lib ^
-    -DNELNET_LIBRARY=%NEL_PREFIX_PATH%/lib/Release/nelnet_r.lib ^
-    -DNELNET_LIBRARY_DEBUG=%NEL_PREFIX_PATH%/lib/Release/nelnet_r.lib ^
-    -DLIBXML2_INCLUDE_DIR=%TUXDEPS_PREFIX_PATH%/libxml2/include/libxml2 ^
-    -DLIBXML2_LIBRARY=%TUXDEPS_PREFIX_PATH%/libxml2/lib/libxml2.lib ^
-    -DZLIB_ROOT=%TUXDEPS_PREFIX_PATH%/zlib ^
-    -DCURL_ROOT=%TUXDEPS_PREFIX_PATH%/curl ^
-    -DOPENSSL_ROOT_DIR=%TUXDEPS_PREFIX_PATH%/openssl ^
-    -DSSLEAY_LIBRARY=%TUXDEPS_PREFIX_PATH%/openssl/lib/libssl.lib ^
-    -DEAY_LIBRARY=%TUXDEPS_PREFIX_PATH%/openssl/lib/libcrypto.lib ^
-    -DLUA_INCLUDE_DIR=%TUXDEPS_PREFIX_PATH%/lua/include ^
-    -DLUA_LIBRARIES=%TUXDEPS_PREFIX_PATH%/lua/lib/lua.lib
+    -DNEL_PREFIX_PATH=%NEL_PATH% ^
+    -DCMAKE_PREFIX_PATH=%DEPS_PATH% ^
+    -DLUA_INCLUDE_DIR:PATH=%DEPS_PATH%/lua/include ^
+    -DLUA_LIBRARIES:FILEPATH=%DEPS_PATH%/lua/lib/lua.lib ^
+    -DLIBXML2_INCLUDE_DIR:PATH=%DEPS_PATH%/libxml2/include/libxml2 ^
+    -DLIBXML2_LIBRARY:FILEPATH=%DEPS_PATH%/libxml2/lib/libxml2.lib ^
+    -DZLIB_ROOT=%DEPS_PATH%/zlib ^
+    -DZLIB_LIBRARY:FILEPATH=%DEPS_PATH%/zlib/lib/zlib.lib ^
+    -DCURL_ROOT=%DEPS_PATH%/curl ^
+    -DCURL_INCLUDE_DIR:PATH=%DEPS_PATH%/curl/include ^
+    -DCURL_LIBRARY:FILEPATH=%DEPS_PATH%/curl/lib/libcurl_imp.lib ^
+    -DCURL_LIBRARIES:FILEPATH=%DEPS_PATH%/curl/lib/libcurl_imp.lib ^
+    -DOPENSSL_ROOT_DIR=%DEPS_PATH%/openssl ^
+    -DFREETYPE_INCLUDE_DIRS:PATH=%DEPS_PATH%/freetype/include/freetype2 ^
+    -DFREETYPE_LIBRARY:FILEPATH=%DEPS_PATH%/freetype/lib/freetype.lib ^
+    -DPNG_PNG_INCLUDE_DIR:PATH=%DEPS_PATH%/libpng/include ^
+    -DPNG_LIBRARY:FILEPATH=%DEPS_PATH%/libpng/lib/libpng16.lib ^
+    -DJPEG_INCLUDE_DIR:PATH=%DEPS_PATH%/libjpeg/include ^
+    -DJPEG_LIBRARY:FILEPATH=%DEPS_PATH%/libjpeg/lib/jpeg.lib ^
+    -DVORBIS_LIBRARY:FILEPATH=%DEPS_PATH%/vorbis/lib/vorbis.lib ^
+    -DVORBISFILE_LIBRARY:FILEPATH=%DEPS_PATH%/vorbis/lib/vorbisfile.lib ^
+    -DOGG_LIBRARY:FILEPATH=%DEPS_PATH%/ogg/lib/ogg.lib
 
 if %ERRORLEVEL% neq 0 (
     echo CMake configuration failed!
@@ -135,10 +139,7 @@ echo   Client build finished!
 echo =========================================
 echo.
 echo To run the client:
-echo   cd %BUILD_DIR%\bin\Release
-echo   tux-target.exe
-echo.
-echo Or use the run script with log rotation:
 echo   scripts\run-client.bat
+echo.
 
 endlocal

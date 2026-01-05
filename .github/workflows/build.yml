@@ -51,7 +51,7 @@ jobs:
         uses: actions/cache@v4
         with:
           path: C:/external
-          key: ryzom-external-2022q2-v14
+          key: ryzom-external-2022q2-v15
 
       - name: Download External Dependencies
         if: steps.cache-deps.outputs.cache-hit != 'true'
@@ -98,18 +98,84 @@ jobs:
             }
           }
 
-          # Verify key directories exist (lua, libxml2, etc.)
-          $required = @("lua", "libxml2", "zlib")
-          foreach ($dir in $required) {
-            if (!(Test-Path "C:/external/$dir")) {
-              Write-Warning "Expected directory not found: $dir"
-            } else {
-              Write-Host "Found: $dir"
-            }
-          }
-
           # Cleanup archive to save space
           Remove-Item $output
+
+          # ===========================================
+          # REQUIRED FILES MANIFEST
+          # This is the definitive list of files needed for building.
+          # The cleanup step will preserve these, and verification will check them.
+          # ===========================================
+          $requiredLibs = @(
+            # Core libraries
+            "libxml2/lib/libxml2.lib",
+            "zlib/lib/zlib.lib",
+            "lua/lib/lua.lib",
+            "luabind/lib/luabind.lib",
+            # Networking
+            "curl/lib/libcurl_imp.lib",
+            "openssl/lib/VC/libcrypto64MD.lib",
+            "openssl/lib/VC/libssl64MD.lib",
+            # Graphics
+            "freetype/lib/freetype.lib",
+            "libpng/lib/libpng16.lib",
+            "libjpeg/lib/jpeg.lib",
+            # Audio
+            "ogg/lib/ogg.lib",
+            "vorbis/lib/vorbis.lib",
+            "vorbis/lib/vorbisfile.lib",
+            "openal-soft/lib/OpenAL32.lib"
+          )
+
+          $requiredDLLs = @(
+            "lua/bin/lua.dll",
+            "libxml2/bin/libxml2.dll",
+            "zlib/bin/zlib.dll",
+            "curl/bin/libcurl.dll",
+            "openssl/bin/libcrypto-1_1-x64.dll",
+            "openssl/bin/libssl-1_1-x64.dll",
+            "freetype/bin/freetype.dll",
+            "libpng/bin/libpng16.dll",
+            "libjpeg/bin/jpeg62.dll",
+            "ogg/bin/ogg.dll",
+            "vorbis/bin/vorbis.dll",
+            "vorbis/bin/vorbisfile.dll",
+            "openal-soft/bin/OpenAL32.dll"
+          )
+
+          $requiredHeaders = @(
+            "libxml2/include/libxml2/libxml/xmlversion.h",
+            "lua/include/lua.h",
+            "luabind/include/luabind/luabind.hpp",
+            "curl/include/curl/curl.h",
+            "openssl/include/openssl/ssl.h",
+            "zlib/include/zlib.h",
+            "freetype/include/freetype2/ft2build.h",
+            "libpng/include/png.h",
+            "libjpeg/include/jpeglib.h",
+            "ogg/include/ogg/ogg.h",
+            "vorbis/include/vorbis/vorbisfile.h",
+            "openal-soft/include/AL/al.h",
+            "boost/include/boost/version.hpp"
+          )
+
+          # Combine all required files for verification
+          $allRequiredFiles = $requiredLibs + $requiredDLLs + $requiredHeaders
+
+          Write-Host "`n=== Verifying required files after extraction ==="
+          $missingFiles = @()
+          foreach ($file in $allRequiredFiles) {
+            $fullPath = "C:/external/$file"
+            if (!(Test-Path $fullPath)) {
+              $missingFiles += $file
+              Write-Host "[MISSING] $file"
+            }
+          }
+          if ($missingFiles.Count -gt 0) {
+            Write-Error "Missing $($missingFiles.Count) required files after extraction!"
+            exit 1
+          }
+          Write-Host "All $($allRequiredFiles.Count) required files present"
 
           # Remove all OpenSSL libs except the specific release ones we need
           # (FindOpenSSL returns "optimized;...;debug;..." format which modern CMake
@@ -181,7 +247,7 @@ jobs:
             Remove-Item -Force -ErrorAction SilentlyContinue
 
           # Remove static libraries we don't need
-          # Note: Keep libcurl.lib - FindCURL module looks for it by name
+          # Note: We use libcurl_imp.lib (DLL import lib), not libcurl.lib (static)
           Write-Host "Removing unnecessary static libraries..."
           $staticLibsToRemove = @(
             "C:/external/zlib/lib/zlibstatic.lib"    # We use zlib.lib (DLL import)
@@ -197,7 +263,26 @@ jobs:
           Write-Host "`nSize after cleanup: $([math]::Round($afterSize, 2)) MB"
           Write-Host "Saved: $([math]::Round($beforeSize - $afterSize, 2)) MB"
 
-          Write-Host "External dependencies ready at C:/external"
+          # ===========================================
+          # VERIFY REQUIRED FILES AFTER CLEANUP
+          # This ensures cleanup didn't accidentally delete anything we need
+          # ===========================================
+          Write-Host "`n=== Verifying required files after cleanup ==="
+          $missingAfterCleanup = @()
+          foreach ($file in $allRequiredFiles) {
+            $fullPath = "C:/external/$file"
+            if (!(Test-Path $fullPath)) {
+              $missingAfterCleanup += $file
+              Write-Host "[DELETED BY CLEANUP] $file"
+            }
+          }
+          if ($missingAfterCleanup.Count -gt 0) {
+            Write-Error "Cleanup deleted $($missingAfterCleanup.Count) required files! Fix the cleanup rules."
+            exit 1
+          }
+          Write-Host "All $($allRequiredFiles.Count) required files still present after cleanup"
+
+          Write-Host "`nExternal dependencies ready at C:/external"
           Write-Host "Final structure:"
           Get-ChildItem C:/external | Select-Object Mode, Name
 
@@ -437,7 +522,7 @@ jobs:
             -DPNG_LIBRARY=C:/external/libpng/lib/libpng16.lib `
             -DJPEG_INCLUDE_DIR=C:/external/libjpeg/include `
             -DJPEG_LIBRARY=C:/external/libjpeg/lib/jpeg.lib `
-            -DFREETYPE_INCLUDE_DIRS=C:/external/freetype/include `
+            -DFREETYPE_INCLUDE_DIRS=C:/external/freetype/include/freetype2 `
             -DFREETYPE_LIBRARY=C:/external/freetype/lib/freetype.lib `
             -DOPENAL_INCLUDE_DIR=C:/external/openal-soft/include `
             -DOPENAL_LIBRARY=C:/external/openal-soft/lib/OpenAL32.lib `
@@ -530,27 +615,67 @@ jobs:
         uses: actions/cache/restore@v4
         with:
           path: C:/external
-          key: ryzom-external-2022q2-v14
+          key: ryzom-external-2022q2-v15
           restore-keys: |
             ryzom-external-2022q2-
 
-      - name: Verify Library Paths
+      - name: Verify Required Files
         shell: pwsh
         run: |
-          Write-Host "=== Verifying library paths for client build ==="
-          $libs = @(
-            "C:/external/libxml2/lib/libxml2.lib",
-            "C:/external/zlib/lib/zlib.lib",
-            "C:/external/lua/lib/lua.lib",
-            "C:/external/curl/lib/libcurl_imp.lib"
+          Write-Host "=== Verifying all required files for client build ==="
+
+          # Same manifest as in build-deps (keep in sync!)
+          $requiredLibs = @(
+            "libxml2/lib/libxml2.lib",
+            "zlib/lib/zlib.lib",
+            "lua/lib/lua.lib",
+            "luabind/lib/luabind.lib",
+            "curl/lib/libcurl_imp.lib",
+            "openssl/lib/VC/libcrypto64MD.lib",
+            "openssl/lib/VC/libssl64MD.lib",
+            "freetype/lib/freetype.lib",
+            "libpng/lib/libpng16.lib",
+            "libjpeg/lib/jpeg.lib",
+            "ogg/lib/ogg.lib",
+            "vorbis/lib/vorbis.lib",
+            "vorbis/lib/vorbisfile.lib",
+            "openal-soft/lib/OpenAL32.lib"
           )
-          foreach ($lib in $libs) {
-            if (Test-Path $lib) {
-              Write-Host "[OK] $lib"
+
+          $requiredDLLs = @(
+            "lua/bin/lua.dll",
+            "libxml2/bin/libxml2.dll",
+            "zlib/bin/zlib.dll",
+            "curl/bin/libcurl.dll",
+            "openssl/bin/libcrypto-1_1-x64.dll",
+            "openssl/bin/libssl-1_1-x64.dll",
+            "freetype/bin/freetype.dll",
+            "libpng/bin/libpng16.dll",
+            "libjpeg/bin/jpeg62.dll",
+            "ogg/bin/ogg.dll",
+            "vorbis/bin/vorbis.dll",
+            "vorbis/bin/vorbisfile.dll",
+            "openal-soft/bin/OpenAL32.dll"
+          )
+
+          $allRequired = $requiredLibs + $requiredDLLs
+          $missing = @()
+
+          foreach ($file in $allRequired) {
+            $fullPath = "C:/external/$file"
+            if (Test-Path $fullPath) {
+              Write-Host "[OK] $file"
             } else {
-              Write-Error "[MISSING] $lib"
+              $missing += $file
+              Write-Host "[MISSING] $file"
             }
           }
+
+          if ($missing.Count -gt 0) {
+            Write-Error "Missing $($missing.Count) required files! Cache may be corrupted."
+            exit 1
+          }
+          Write-Host "`nAll $($allRequired.Count) required files verified"
 
       - name: Configure CMake (Client)
         shell: pwsh
@@ -574,9 +699,10 @@ jobs:
             -DZLIB_LIBRARY:FILEPATH=C:/external/zlib/lib/zlib.lib `
             -DCURL_ROOT=C:/external/curl `
             -DCURL_INCLUDE_DIR:PATH=C:/external/curl/include `
-            -DCURL_LIBRARY:FILEPATH=C:/external/curl/lib/libcurl.lib `
+            -DCURL_LIBRARY:FILEPATH=C:/external/curl/lib/libcurl_imp.lib `
+            -DCURL_LIBRARIES:FILEPATH=C:/external/curl/lib/libcurl_imp.lib `
             -DOPENSSL_ROOT_DIR=C:/external/openssl `
-            -DFREETYPE_INCLUDE_DIRS:PATH=C:/external/freetype/include `
+            -DFREETYPE_INCLUDE_DIRS:PATH=C:/external/freetype/include/freetype2 `
             -DFREETYPE_LIBRARY:FILEPATH=C:/external/freetype/lib/freetype.lib `
             -DPNG_PNG_INCLUDE_DIR:PATH=C:/external/libpng/include `
             -DPNG_LIBRARY:FILEPATH=C:/external/libpng/lib/libpng16.lib `
@@ -712,7 +838,7 @@ jobs:
         uses: actions/cache/restore@v4
         with:
           path: C:/external
-          key: ryzom-external-2022q2-v14
+          key: ryzom-external-2022q2-v15
           restore-keys: |
             ryzom-external-2022q2-
 
@@ -773,7 +899,7 @@ jobs:
             -DLIBXML2_INCLUDE_DIR=C:/external/libxml2/include/libxml2 `
             -DLIBXML2_LIBRARY=C:/external/libxml2/lib/libxml2.lib `
             -DZLIB_ROOT=C:/external/zlib `
-            -DFREETYPE_INCLUDE_DIRS=C:/external/freetype/include `
+            -DFREETYPE_INCLUDE_DIRS=C:/external/freetype/include/freetype2 `
             -DFREETYPE_LIBRARY=C:/external/freetype/lib/freetype.lib `
             -DPNG_PNG_INCLUDE_DIR=C:/external/libpng/include `
             -DPNG_LIBRARY=C:/external/libpng/lib/libpng16.lib `

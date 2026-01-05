@@ -5,6 +5,9 @@ build-server/
 bin/
 lib/
 
+# Dependencies (downloaded by scripts/setup-deps.ps1)
+deps/
+
 # AI/Assistant directories
 .claude/
 .roo/

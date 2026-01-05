@@ -1,9 +1,13 @@
 @echo off
 REM
-REM Build Tux Target Server Only (Windows)
+REM Build Tux Target Server (Windows)
 REM
-REM This script builds only the game server to a separate build-server directory.
-REM Usage: scripts\build-server.bat [--clean] [--skip-post-build]
+REM Prerequisites: Run setup-deps.bat first to install dependencies
+REM
+REM Usage:
+REM   scripts\build-server.bat              - Build server
+REM   scripts\build-server.bat --clean      - Clean build
+REM   scripts\build-server.bat --skip-post-build  - Skip post-build setup
 REM
 
 setlocal enabledelayedexpansion
@@ -29,6 +33,29 @@ echo Project directory: %PROJECT_DIR%
 echo Build directory:   %BUILD_DIR%
 echo.
 
+REM Check dependencies (default: deps/ directory in repo)
+set DEPS_PATH=%PROJECT_DIR%\deps
+if defined TUXDEPS_PATH set DEPS_PATH=%TUXDEPS_PATH%
+echo Dependencies path: %DEPS_PATH%
+
+if not exist "%DEPS_PATH%\lua\lib\lua.lib" (
+    echo.
+    echo ERROR: Dependencies not found at %DEPS_PATH%
+    echo Please run: scripts\setup-deps.bat
+    echo.
+    exit /b 1
+)
+
+if not exist "%DEPS_PATH%\ode\lib\ode_doubles.lib" (
+    echo.
+    echo ERROR: ODE physics library not found at %DEPS_PATH%\ode
+    echo Please run: scripts\setup-deps.bat
+    echo.
+    exit /b 1
+)
+echo Dependencies: OK
+echo.
+
 REM Clean build if requested
 if %CLEAN_BUILD%==1 (
     echo Cleaning build directory...
@@ -45,47 +72,34 @@ if "%NUM_CORES%"=="" set NUM_CORES=4
 echo Using %NUM_CORES% CPU cores for build
 echo.
 
-REM Set dependency paths (check environment variables first, then use defaults)
-if "%NEL_PREFIX_PATH%"=="" (
-    set NEL_PREFIX_PATH=C:/ryzomcore/build
-)
-if "%TUXDEPS_PREFIX_PATH%"=="" (
-    set TUXDEPS_PREFIX_PATH=C:/tux_target_deps
-)
-
-echo Dependency configuration:
-echo   NEL_PREFIX_PATH: %NEL_PREFIX_PATH%
-echo   TUXDEPS_PREFIX_PATH: %TUXDEPS_PREFIX_PATH%
+REM Set NeL path (check environment variable first, then use default)
+set NEL_PATH=C:/ryzomcore/build
+if defined NEL_PREFIX_PATH set NEL_PATH=%NEL_PREFIX_PATH%
+echo NeL path: %NEL_PATH%
 echo.
 
-REM Configure CMake with explicit paths for dependencies
-echo Configuring CMake (Server only)...
+REM Configure CMake using shared configuration
+echo Configuring CMake (Server)...
 cmake .. ^
     -G "Visual Studio 17 2022" ^
     -DBUILD_CLIENT=OFF ^
     -DBUILD_SERVER=ON ^
-    -DNEL_PREFIX_PATH=%NEL_PREFIX_PATH% ^
-    -DCMAKE_PREFIX_PATH=%TUXDEPS_PREFIX_PATH% ^
-    -DCMAKE_LIBRARY_PATH=%NEL_PREFIX_PATH%/lib/Release ^
-    -DCMAKE_INCLUDE_PATH=C:/ryzomcore/nel/include ^
-    -DNEL_INCLUDE_DIR=C:/ryzomcore/nel/include ^
-    -DNEL_LIBRARY_DIR=%NEL_PREFIX_PATH%/lib/Release ^
-    -DNELMISC_LIBRARY=%NEL_PREFIX_PATH%/lib/Release/nelmisc_r.lib ^
-    -DNELMISC_LIBRARY_DEBUG=%NEL_PREFIX_PATH%/lib/Release/nelmisc_r.lib ^
-    -DNEL3D_LIBRARY=%NEL_PREFIX_PATH%/lib/Release/nel3d_r.lib ^
-    -DNEL3D_LIBRARY_DEBUG=%NEL_PREFIX_PATH%/lib/Release/nel3d_r.lib ^
-    -DNELNET_LIBRARY=%NEL_PREFIX_PATH%/lib/Release/nelnet_r.lib ^
-    -DNELNET_LIBRARY_DEBUG=%NEL_PREFIX_PATH%/lib/Release/nelnet_r.lib ^
-    -DLIBXML2_INCLUDE_DIR=%TUXDEPS_PREFIX_PATH%/libxml2/include/libxml2 ^
-    -DLIBXML2_LIBRARY=%TUXDEPS_PREFIX_PATH%/libxml2/lib/libxml2.lib ^
-    -DZLIB_ROOT=%TUXDEPS_PREFIX_PATH%/zlib ^
-    -DODE_INCLUDE_DIR=%TUXDEPS_PREFIX_PATH%/ode/include ^
-    -DODE_LIBRARY=%TUXDEPS_PREFIX_PATH%/ode/lib/ode_doubles.lib ^
-    -DPNG_LIBRARY=%TUXDEPS_PREFIX_PATH%/libpng/lib/libpng16.lib ^
-    -DJPEG_LIBRARY=%TUXDEPS_PREFIX_PATH%/libjpeg/lib/jpeg.lib ^
-    -DFREETYPE_LIBRARY=%TUXDEPS_PREFIX_PATH%/freetype/lib/freetype.lib ^
-    -DLUA_INCLUDE_DIR=%TUXDEPS_PREFIX_PATH%/lua/include ^
-    -DLUA_LIBRARIES=%TUXDEPS_PREFIX_PATH%/lua/lib/lua.lib
+    -DNEL_PREFIX_PATH=%NEL_PATH% ^
+    -DCMAKE_PREFIX_PATH=%DEPS_PATH% ^
+    -DLUA_INCLUDE_DIR:PATH=%DEPS_PATH%/lua/include ^
+    -DLUA_LIBRARIES:FILEPATH=%DEPS_PATH%/lua/lib/lua.lib ^
+    -DLIBXML2_INCLUDE_DIR:PATH=%DEPS_PATH%/libxml2/include/libxml2 ^
+    -DLIBXML2_LIBRARY:FILEPATH=%DEPS_PATH%/libxml2/lib/libxml2.lib ^
+    -DZLIB_ROOT=%DEPS_PATH%/zlib ^
+    -DZLIB_LIBRARY:FILEPATH=%DEPS_PATH%/zlib/lib/zlib.lib ^
+    -DFREETYPE_INCLUDE_DIRS:PATH=%DEPS_PATH%/freetype/include/freetype2 ^
+    -DFREETYPE_LIBRARY:FILEPATH=%DEPS_PATH%/freetype/lib/freetype.lib ^
+    -DPNG_PNG_INCLUDE_DIR:PATH=%DEPS_PATH%/libpng/include ^
+    -DPNG_LIBRARY:FILEPATH=%DEPS_PATH%/libpng/lib/libpng16.lib ^
+    -DJPEG_INCLUDE_DIR:PATH=%DEPS_PATH%/libjpeg/include ^
+    -DJPEG_LIBRARY:FILEPATH=%DEPS_PATH%/libjpeg/lib/jpeg.lib ^
+    -DODE_INCLUDE_DIR=%DEPS_PATH%/ode/include ^
+    -DODE_LIBRARY=%DEPS_PATH%/ode/lib/ode_doubles.lib
 
 if %ERRORLEVEL% neq 0 (
     echo CMake configuration failed!
@@ -125,10 +139,7 @@ echo   Server build finished!
 echo =========================================
 echo.
 echo To run the server:
-echo   cd %BUILD_DIR%\bin\Release
-echo   tux-target-srv.exe
-echo.
-echo Or use the run script with log rotation:
 echo   scripts\run-server.bat
+echo.
 
 endlocal

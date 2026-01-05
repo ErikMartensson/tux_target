@@ -4,10 +4,15 @@ A penguin bowling/curling game where players roll down slopes and land on scorin
 
 ## Quick Start
 
-```bash
-# Build
-.\scripts\build-server.bat
+```powershell
+# First-time setup: Install dependencies (~1.3GB download)
+.\scripts\setup-deps.ps1
+
+# Build RyzomCore/NeL first (one-time, see docs/BUILDING.md)
+
+# Build game
 .\scripts\build-client.bat
+.\scripts\build-server.bat
 
 # Run (two terminals)
 .\scripts\run-server.bat
@@ -18,6 +23,13 @@ A penguin bowling/curling game where players roll down slopes and land on scorin
 
 ```
 tux_target/
+├── deps/                        # Dependencies (git-ignored, created by setup-deps.ps1)
+│   ├── lua/                     # Lua 5.1
+│   ├── curl/                    # libcurl
+│   ├── libxml2/                 # XML parsing
+│   ├── ode/                     # Physics engine (server only)
+│   └── ...
+│
 ├── build-client/bin/Release/    # Client build output
 │   ├── tux-target.exe
 │   └── data/                    # Game assets (copied from data/)
@@ -39,6 +51,7 @@ tux_target/
 ├── common/                      # Shared code
 │
 ├── scripts/                     # Build and run scripts
+│   ├── setup-deps.ps1           # Downloads dependencies to deps/
 │   ├── build-client.bat
 │   ├── build-server.bat
 │   ├── run-client.bat           # Supports: --lan <host> --user <name>

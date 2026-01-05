@@ -6,7 +6,7 @@
 
 > A free multiplayer online action game where you roll down a giant ramp and delicately land on platforms to score points. Fight with and against players in this mix of action, dexterity, and strategy - inspired by Monkey Target from Super Monkey Ball.
 
-**Status:** 🚧 Work in Progress - Version 1.2.2a client and server working with 7 of 71 maps
+**Status:** 🎮 Playable - Version 1.2.2a client and server working with 32 of 62 levels
 
 ---
 
@@ -14,7 +14,7 @@
 
 - [About This Project](#about-this-project)
 - [Current Status](#current-status)
-- [Quick Start (Ubuntu/WSL)](#quick-start-ubuntuwsl)
+- [Quick Start (Windows)](#quick-start-windows)
 - [Documentation](#documentation)
 - [Architecture](#architecture)
 - [What We've Fixed](#what-weve-fixed)
@@ -61,7 +61,7 @@ The v1.5.19 client source code is preserved in [`reference/mtp-target-v1.5.19/`]
 ### What Works ✅
 
 - ✅ **Build System:** Full Windows build with Visual Studio 2022 and automated scripts
-- ✅ **Game Server:** Compiles and runs on Windows, 7 compatible levels working
+- ✅ **Game Server:** Compiles and runs on Windows, 32 playable levels working
 - ✅ **Game Client:** Compiles and runs on Windows with OpenGL/OpenAL drivers
 - ✅ **Login Service:** Modern TypeScript/Deno implementation handles authentication
 - ✅ **Database:** SQLite-based user and shard management
@@ -76,18 +76,16 @@ The v1.5.19 client source code is preserved in [`reference/mtp-target-v1.5.19/`]
 
 See [docs/KNOWN_ISSUES.md](docs/KNOWN_ISSUES.md) for the complete issue tracker.
 
-**High Priority:**
-- ⚠️ **64 maps unavailable** - Require v1.5.19 Lua API (compatibility layer needed)
-- ⚠️ **Bot AI issues** - Not working correctly on all maps
-
 **Medium Priority:**
+- ⚠️ **30 levels unavailable** - Require missing theme assets (space/sun/city)
+- ⚠️ **Bot AI limited** - Bots learn from player replays, don't play independently
 - ⚠️ **High ping on localhost** - 17-19ms instead of near-zero
 - ⚠️ **Input delay** - Noticeable lag between steering input and penguin response
 
 **Low Priority:**
 - ⚠️ **Water rendering disabled** - Falls back gracefully when textures missing
 
-**The game is playable!** Core mechanics work, but many maps and features still need fixes.
+**The game is fully playable!** All 32 snow-theme levels work with proper scoring and physics.
 
 See [docs/RUNTIME_FIXES.md](docs/RUNTIME_FIXES.md) for detailed fix documentation.
 
@@ -97,45 +95,59 @@ See [docs/RUNTIME_FIXES.md](docs/RUNTIME_FIXES.md) for detailed fix documentatio
 
 **Prerequisites:**
 - Windows 10/11
-- Visual Studio 2022 Build Tools
+- Visual Studio 2022 Build Tools (with C++ Desktop Development)
 - CMake 3.20+
-- Deno 2.6.0+ (for login service)
-- Git Bash (recommended for running scripts)
+- 7-Zip (for extracting dependencies)
+- PowerShell 5.1+
 
-### 1. Build Dependencies
+**Optional:**
+- vcpkg (for server builds - ODE physics library)
+- Deno 2.6.0+ (for login service, only needed for "Play Online")
 
-See **[docs/BUILDING.md](docs/BUILDING.md)** for complete instructions on building:
-- NeL Framework (from Ryzom Core)
-- ODE Physics Library (0.16.5)
-- External dependencies (CURL, Lua, libxml2, etc.)
+### 1. Setup Dependencies
 
-### 2. Build Game Client & Server
+```powershell
+# Download and install dependencies (~1.3GB)
+.\scripts\setup-deps.ps1
 
-```bash
-cd tux_target
-
-# Build client and server (includes post-build file copying)
-./scripts/build-client.sh   # or scripts\build-client.bat on Windows
-./scripts/build-server.sh   # or scripts\build-server.bat on Windows
-
-# Or build both at once
-./scripts/build-all.sh      # or scripts\build-all.bat on Windows
+# Client only (skip ODE physics library)
+.\scripts\setup-deps.ps1 -SkipODE
 ```
 
-### 3. Start Services
+This downloads pre-built libraries to `deps/` (git-ignored).
 
-```bash
-# Terminal 1: Start login service
-cd login-service-deno
-deno task login
+### 2. Build RyzomCore (NeL)
 
-# Terminal 2: Start game server
-cd build/bin/Release
-./tux-target-srv.exe
+One-time build of the NeL engine libraries (~15 minutes):
 
-# Terminal 3: Start game client
-cd build/bin/Release
-./tux-target.exe
+```powershell
+git clone --depth 1 https://github.com/ryzom/ryzomcore.git C:\ryzomcore
+cd C:\ryzomcore && mkdir build && cd build
+
+cmake .. -G "Visual Studio 17 2022" -A x64 `
+    -DWITH_SOUND=ON -DWITH_NEL=ON -DWITH_NEL_TOOLS=OFF `
+    -DWITH_NEL_TESTS=OFF -DWITH_NEL_SAMPLES=OFF -DWITH_RYZOM=OFF `
+    -DWITH_STATIC=ON -DCMAKE_PREFIX_PATH="C:/path/to/tux_target/deps"
+
+cmake --build . --config Release --parallel 4 --target nelmisc nel3d nelnet nelsound nelsnd_lowlevel nelgeorges nelligo
+cmake --build . --config Release --parallel 2 --target nel_drv_opengl_win nel_drv_openal_win
+```
+
+### 3. Build Game
+
+```powershell
+.\scripts\build-client.bat
+.\scripts\build-server.bat
+```
+
+### 4. Run the Game
+
+```powershell
+# Terminal 1: Start server
+.\scripts\run-server.bat
+
+# Terminal 2: Start client (LAN mode - no login service needed)
+.\scripts\run-client.bat --lan localhost --user YourName
 ```
 
 **Controls:**
@@ -267,25 +279,26 @@ We'd love your help! This is a community effort to preserve a fun open-source ga
 
 ## Project Goals
 
-### Short Term
-- [x] Get server running on modern Linux
-- [x] Build working login service
-- [ ] Debug SCS message format (in progress)
-- [ ] Compile client from source
-- [ ] Test full connection flow
+### Completed
+- [x] Windows build system with Visual Studio 2022
+- [x] Automated builds (GitHub Actions CI)
+- [x] Game server running with 32 playable levels
+- [x] Game client compiled from source
+- [x] Full network protocol working
+- [x] Modern Lua 5.x compatibility
+- [x] Physics fixes (momentum preservation, steering)
+- [x] Scoring system fully functional
 
-### Medium Term
-- [ ] Windows build system
-- [ ] Automated builds (GitHub Actions)
+### In Progress
+- [ ] Import missing theme assets (space/sun/city - 30 levels)
+- [ ] Improve bot AI
+- [ ] Reduce network latency
+
+### Future
 - [ ] Docker containers for easy deployment
-- [ ] Modern authentication (optional)
-- [ ] Web-based server browser
-
-### Long Term
 - [ ] Community servers
 - [ ] Custom levels and mods
-- [ ] Updated graphics (optional)
-- [ ] Modern networking (optional)
+- [ ] Linux/macOS builds
 
 ---
 
@@ -294,28 +307,20 @@ We'd love your help! This is a community effort to preserve a fun open-source ga
 See [docs/KNOWN_ISSUES.md](docs/KNOWN_ISSUES.md) for the complete issue tracker.
 
 ### Open Issues
-- **64 maps unavailable** - Require v1.5.19 Lua API compatibility layer
-- **Bot AI broken** - Not deploying correctly on all maps
+- **30 levels unavailable** - Require missing theme assets (space/sun/city)
+- **Bot AI limited** - Bots learn from player replays, don't play independently
 - **High ping on localhost** - 17-19ms instead of near-zero
 - **Input delay** - Noticeable lag between steering and response
-- **Darts map spawn position** - Players spawn too far back (needs testing)
 - **Water rendering disabled** - Falls back gracefully when textures missing
 
-### Fixed Issues ✅
-- ✅ Build system - Full Windows compilation with automated scripts
-- ✅ Client/server crashes - Major crashes resolved
-- ✅ Scoring system - Players score correctly on landing platforms
-- ✅ Friction system - Penguins slow down properly on target platforms
-- ✅ Server level transition crashes - Lua 5.x compatibility fixes applied
-- ✅ Chat commands - Vote and admin commands work with feedback
-- ✅ Keyboard controls - Arrow keys work for steering, chat toggle working
-- ✅ Physics steering - Entity acceleration and module override fixed
-- ✅ Penguin visual size - Mesh scaling matches collision sphere
-- ✅ Camera controls - Zoom persists on mouse drag
-- ✅ Level loading - 7 compatible levels load correctly
-- ✅ Game assets - All textures, shapes, sounds consolidated in repo
-- ✅ Network protocol - Full compatibility achieved
-- ✅ **Momentum loss on ramp transitions** - Fixed ODE trimesh edge collision (dContactApprox1)
+### Fixed Issues
+- Build system - Full Windows compilation with automated scripts and CI
+- All 32 snow-theme levels working with proper scoring
+- Physics steering and momentum preservation
+- Keyboard controls with chat toggle mode
+- Camera controls with persistent zoom
+- Team level scoring (red/blue detection)
+- Lua 5.x compatibility throughout
 
 See [docs/RUNTIME_FIXES.md](docs/RUNTIME_FIXES.md) for fix documentation.
 
@@ -343,10 +348,12 @@ See [COPYING](COPYING) for full license text.
 - **ODE Physics:** Russell Smith and contributors
 - **Lua:** PUC-Rio team
 
-### Community Restoration (2025)
-- Server compilation and modern compatibility fixes
+### Community Restoration (2025-2026)
+- Full Windows build system with automated CI
+- Server and client compilation from source
 - TypeScript login service implementation
-- Documentation and build guides
+- 32 levels tested and working
+- Comprehensive documentation
 
 ---
 

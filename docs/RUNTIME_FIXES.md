@@ -2,7 +2,7 @@
 
 This document describes all the fixes required after building the client and server to make the game actually playable.
 
-**Last Updated:** December 29, 2025 (Session 7)
+**Last Updated:** January 5, 2026
 
 ---
 
@@ -394,16 +394,6 @@ The script automatically:
 
 ## Known Issues (Remaining)
 
-### Scoring System Broken
-- **Impact:** CRITICAL - Game unplayable without scoring
-- **Symptom:** Landing on platforms awards no points to scoreboard
-- **Status:** Under investigation
-- **Next Steps:**
-  - Search for scoring logic in server code
-  - Check collision detection and scoring triggers
-  - Verify score network sync to client
-  - Test if scoring requires velocity threshold
-
 ### Advanced Water Mode (DisplayWater=2)
 - **Impact:** Minor - basic water works, advanced water has better visuals
 - **Status:** DisplayWater = 1 (basic water enabled, advanced disabled)
@@ -413,15 +403,6 @@ The script automatically:
 - **Next Steps:**
   - Would require patching/rebuilding Ryzom Core's NeL3D library
   - Low priority since basic water is functional
-
-### Physics Tuning
-- **Impact:** Gameplay balance issues
-- **Symptom:** Can't find friction value that allows both speed and stopping on targets
-- **Status:** Under investigation
-- **Current:** Accel=0.0001f (enables steering), Friction=0.5f (testing)
-- **Next Steps:**
-  - Determine correct default values from original game
-  - Test if targets need special friction override
 
 ---
 
@@ -453,7 +434,7 @@ The script automatically:
 
 ---
 
-**Last Updated:** December 29, 2025 (Session 7)
+**Last Updated:** January 5, 2026
 **Tested With:** Version 1.2.2a (client and server)
 **Platform:** Windows 11, Visual Studio 2022 Build Tools
-**Game Status:** Server stable through all 71 levels, camera/controls perfect, basic water working, scoring still broken
+**Game Status:** Fully playable! 32 levels working, physics and scoring functional, basic water rendering.
