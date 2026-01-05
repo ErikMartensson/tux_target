@@ -242,6 +242,37 @@ jobs:
           Write-Host "=== Verifying external dependencies ==="
           Write-Host "`nlibxml2 lib contents:"
           Get-ChildItem "C:/external/libxml2/lib" -Filter "*.lib" -ErrorAction SilentlyContinue
+
+          # CRITICAL: Check if libxml2.dll exports xmlFree
+          Write-Host "`n=== CRITICAL: Checking libxml2.dll exports for xmlFree ==="
+          if (Test-Path "C:/external/libxml2/bin/libxml2.dll") {
+            Write-Host "Running dumpbin /exports on libxml2.dll..."
+            $exports = dumpbin /exports "C:/external/libxml2/bin/libxml2.dll" 2>&1 | Out-String
+            if ($exports -match "xmlFree") {
+              Write-Host "FOUND: xmlFree is exported by libxml2.dll"
+              echo $exports | Select-String -Pattern "xmlFree|xmlMalloc|xmlRealloc|xmlMemStrdup"
+            } else {
+              Write-Host "WARNING: xmlFree NOT exported by libxml2.dll!"
+              Write-Host "Searching for any memory-related exports..."
+              echo $exports | Select-String -Pattern "Mem|alloc|free" -CaseSensitive:$false | Select-Object -First 15
+            }
+          } else {
+            Write-Host "ERROR: libxml2.dll not found at C:/external/libxml2/bin/"
+            Get-ChildItem "C:/external/libxml2" -Recurse -Filter "*.dll" | Select-Object FullName
+          }
+
+          # Check libxml2.lib for xmlFree symbol
+          Write-Host "`n=== Checking libxml2.lib for xmlFree symbol ==="
+          dumpbin /all "C:/external/libxml2/lib/libxml2.lib" 2>&1 | Select-String -Pattern "xmlFree" | Select-Object -First 10
+
+          # Print xmlexports.h to understand XMLPUBVAR definition
+          Write-Host "`n=== libxml2 xmlexports.h content ==="
+          if (Test-Path "C:/external/libxml2/include/libxml2/libxml/xmlexports.h") {
+            Get-Content "C:/external/libxml2/include/libxml2/libxml/xmlexports.h"
+          } else {
+            Write-Host "xmlexports.h not found!"
+          }
+
           Write-Host "`nOpenSSL lib contents:"
           Get-ChildItem "C:/external/openssl/lib/VC" -Filter "*.lib" -ErrorAction SilentlyContinue
           Write-Host "`nLuabind lib contents:"
