@@ -42,14 +42,13 @@ jobs:
           arch: x64
 
       # STEP 1: Download external dependencies FIRST (RyzomCore needs these to build)
+      # NOTE: No restore-keys - we need exact cache match to ensure ODE triplet is correct
       - name: Cache Dependencies
         id: cache-deps
         uses: actions/cache@v4
         with:
           path: C:/external
-          key: ryzom-external-2022q2-v10
-          restore-keys: |
-            ryzom-external-2022q2-
+          key: ryzom-external-2022q2-v11
 
       - name: Download External Dependencies
         if: steps.cache-deps.outputs.cache-hit != 'true'
@@ -228,7 +227,7 @@ jobs:
         uses: actions/cache@v4
         with:
           path: C:/ryzomcore
-          key: ryzomcore-nel-v9
+          key: ryzomcore-nel-v10
           # No restore-keys fallback - we want exact match only to avoid stale caches
 
       - name: Build RyzomCore
@@ -267,6 +266,8 @@ jobs:
             -DWITH_SNOWBALLS=OFF `
             -DWITH_STATIC=ON `
             -DWITH_STATIC_LIBXML2=ON `
+            "-DCMAKE_C_FLAGS=/DLIBXML_STATIC" `
+            "-DCMAKE_CXX_FLAGS=/DLIBXML_STATIC" `
             "-DCMAKE_PREFIX_PATH=$cmakePrefixPath" `
             -DLUA_INCLUDE_DIR=C:/external/lua/include `
             -DLUA_LIBRARIES=C:/external/lua/lib/lua51.lib `
@@ -352,14 +353,14 @@ jobs:
         uses: actions/cache/restore@v4
         with:
           path: C:/ryzomcore
-          key: ryzomcore-nel-v9
+          key: ryzomcore-nel-v10
           fail-on-cache-miss: true
 
       - name: Restore Dependencies Cache
         uses: actions/cache/restore@v4
         with:
           path: C:/external
-          key: ryzom-external-2022q2-v10
+          key: ryzom-external-2022q2-v11
           restore-keys: |
             ryzom-external-2022q2-
 
@@ -509,14 +510,14 @@ jobs:
         uses: actions/cache/restore@v4
         with:
           path: C:/ryzomcore
-          key: ryzomcore-nel-v9
+          key: ryzomcore-nel-v10
           fail-on-cache-miss: true
 
       - name: Restore Dependencies Cache
         uses: actions/cache/restore@v4
         with:
           path: C:/external
-          key: ryzom-external-2022q2-v10
+          key: ryzom-external-2022q2-v11
           restore-keys: |
             ryzom-external-2022q2-
 
