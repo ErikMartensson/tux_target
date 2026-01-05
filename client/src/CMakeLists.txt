@@ -183,14 +183,14 @@ ENDIF()
 IF(WIN32)
 	TARGET_LINK_LIBRARIES(tux-target
 									# Base dependencies first
-									optimized C:/tux_target_deps/libxml2/lib/libxml2.lib debug C:/tux_target_deps/libxml2/lib/libxml2d.lib
+									${LIBXML2_LIBRARY}
 									${LUA_LIBRARIES}
-									optimized C:/tux_target_deps/curl/lib/libcurl_imp.lib debug C:/tux_target_deps/curl/lib/libcurl-d_imp.lib
+									${CURL_LIBRARIES}
 									${SSLEAY_LIBRARY}
 									${EAY_LIBRARY}
-									C:/tux_target_deps/vorbis/lib/vorbisfile.lib
-									C:/tux_target_deps/vorbis/lib/vorbis.lib
-									C:/tux_target_deps/ogg/lib/ogg.lib
+									${VORBISFILE_LIBRARY}
+									${VORBIS_LIBRARY}
+									${OGG_LIBRARY}
 									${PNG_LIBRARIES}
 									${FREETYPE_LIBRARY}
 									${JPEG_LIBRARY}

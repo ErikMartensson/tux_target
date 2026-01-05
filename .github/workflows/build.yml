@@ -47,7 +47,7 @@ jobs:
         uses: actions/cache@v4
         with:
           path: C:/external
-          key: ryzom-external-2022q2-v8
+          key: ryzom-external-2022q2-v9
           restore-keys: |
             ryzom-external-2022q2-
 
@@ -152,6 +152,49 @@ jobs:
           # Check libxml2 structure for iconv
           Write-Host "`nlibxml2 lib contents:"
           Get-ChildItem "C:/external/libxml2/lib" -ErrorAction SilentlyContinue
+
+      # Install ODE physics library (not in Ryzom external package)
+      - name: Install ODE
+        shell: pwsh
+        run: |
+          # Skip if ODE already exists from cache
+          if (Test-Path "C:/external/ode/include/ode/ode.h") {
+            Write-Host "ODE already installed, skipping..."
+            exit 0
+          }
+
+          Write-Host "Installing ODE via vcpkg..."
+          # vcpkg is pre-installed on GitHub Actions runners
+          vcpkg install ode:x64-windows-static
+
+          # Copy to C:/external/ode for consistency
+          $vcpkgRoot = $env:VCPKG_INSTALLATION_ROOT
+          if (-not $vcpkgRoot) {
+            $vcpkgRoot = "C:\vcpkg"
+          }
+
+          $installedDir = "$vcpkgRoot\installed\x64-windows-static"
+          if (Test-Path $installedDir) {
+            New-Item -ItemType Directory -Force -Path "C:/external/ode/include"
+            New-Item -ItemType Directory -Force -Path "C:/external/ode/lib"
+
+            # Copy headers
+            if (Test-Path "$installedDir/include/ode") {
+              Copy-Item -Recurse "$installedDir/include/ode" "C:/external/ode/include/"
+              Write-Host "Copied ODE headers"
+            }
+
+            # Copy libraries - ODE can be ode.lib or ode_double.lib depending on build config
+            Get-ChildItem "$installedDir/lib" -Filter "ode*.lib" | ForEach-Object {
+              Copy-Item $_.FullName "C:/external/ode/lib/"
+              Write-Host "Copied: $($_.Name)"
+            }
+
+            Write-Host "`nODE installation complete:"
+            Get-ChildItem "C:/external/ode" -Recurse | Select-Object FullName
+          } else {
+            Write-Error "vcpkg install directory not found: $installedDir"
+          }
 
       # Verify deps exist (runs even with cache hit for debugging)
       - name: Verify Dependencies
@@ -308,7 +351,7 @@ jobs:
         uses: actions/cache/restore@v4
         with:
           path: C:/external
-          key: ryzom-external-2022q2-v8
+          key: ryzom-external-2022q2-v9
           restore-keys: |
             ryzom-external-2022q2-
 
@@ -331,13 +374,17 @@ jobs:
             -DLIBXML2_LIBRARY=C:/external/libxml2/lib/libxml2.lib `
             -DZLIB_ROOT=C:/external/zlib `
             -DCURL_ROOT=C:/external/curl `
+            -DCURL_LIBRARIES=C:/external/curl/lib/libcurl_imp.lib `
             -DOPENSSL_ROOT_DIR=C:/external/openssl `
             -DFREETYPE_INCLUDE_DIRS=C:/external/freetype/include `
             -DFREETYPE_LIBRARY=C:/external/freetype/lib/freetype.lib `
             -DPNG_PNG_INCLUDE_DIR=C:/external/libpng/include `
             -DPNG_LIBRARY=C:/external/libpng/lib/libpng16.lib `
             -DJPEG_INCLUDE_DIR=C:/external/libjpeg/include `
-            -DJPEG_LIBRARY=C:/external/libjpeg/lib/jpeg.lib
+            -DJPEG_LIBRARY=C:/external/libjpeg/lib/jpeg.lib `
+            -DVORBIS_LIBRARY=C:/external/vorbis/lib/vorbis.lib `
+            -DVORBISFILE_LIBRARY=C:/external/vorbis/lib/vorbisfile.lib `
+            -DOGG_LIBRARY=C:/external/ogg/lib/ogg.lib
 
       - name: Build Client
         run: cmake --build build-client --config ${{ env.BUILD_TYPE }} --parallel 4
@@ -440,7 +487,7 @@ jobs:
         uses: actions/cache/restore@v4
         with:
           path: C:/external
-          key: ryzom-external-2022q2-v8
+          key: ryzom-external-2022q2-v9
           restore-keys: |
             ryzom-external-2022q2-
 
@@ -497,7 +544,7 @@ jobs:
             -DJPEG_INCLUDE_DIR=C:/external/libjpeg/include `
             -DJPEG_LIBRARY=C:/external/libjpeg/lib/jpeg.lib `
             -DODE_INCLUDE_DIR=C:/external/ode/include `
-            -DODE_LIBRARY=C:/external/ode/lib/ode_doubles.lib
+            -DODE_LIBRARY=C:/external/ode/lib/ode.lib
 
       - name: Verify CMake Server Config
         shell: pwsh
