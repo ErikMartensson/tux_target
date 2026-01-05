@@ -243,7 +243,7 @@ jobs:
         uses: actions/cache@v4
         with:
           path: C:/ryzomcore
-          key: ryzomcore-nel-v17
+          key: ryzomcore-nel-v18
           # No restore-keys fallback - we want exact match only to avoid stale caches
 
       - name: Build RyzomCore
@@ -353,12 +353,8 @@ jobs:
           }
 
           Write-Host "`nBuilding RyzomCore..."
-          # Build with verbose output for first target to see actual compile flags
-          cmake --build . --parallel 1 --target nelmisc -- -v 2>&1 | Select-Object -First 50
-          Write-Host "`n... (truncated verbose output) ..."
-
-          # Continue building remaining targets normally
-          cmake --build . --parallel 4 --target nelnet nel3d nelsound nelsnd_lowlevel nelgeorges nelligo
+          # Build all targets normally (LIBXML_STATIC is confirmed to be passed)
+          cmake --build . --parallel 4 --target nelmisc nelnet nel3d nelsound nelsnd_lowlevel nelgeorges nelligo
           cmake --build . --parallel 2 --target nel_drv_opengl_win nel_drv_openal_win
 
       - name: Verify RyzomCore Build
@@ -411,7 +407,7 @@ jobs:
         uses: actions/cache/restore@v4
         with:
           path: C:/ryzomcore
-          key: ryzomcore-nel-v17
+          key: ryzomcore-nel-v18
           fail-on-cache-miss: true
 
       - name: Restore Dependencies Cache
@@ -568,7 +564,7 @@ jobs:
         uses: actions/cache/restore@v4
         with:
           path: C:/ryzomcore
-          key: ryzomcore-nel-v17
+          key: ryzomcore-nel-v18
           fail-on-cache-miss: true
 
       - name: Restore Dependencies Cache
