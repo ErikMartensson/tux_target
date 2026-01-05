@@ -290,7 +290,7 @@ jobs:
         uses: actions/cache@v4
         with:
           path: C:/ryzomcore
-          key: ryzomcore-nel-v19
+          key: ryzomcore-nel-v20
           # No restore-keys fallback - we want exact match only to avoid stale caches
 
       - name: Build RyzomCore
@@ -311,13 +311,9 @@ jobs:
           cd build
 
           # Point to external dependencies via CMAKE_PREFIX_PATH
-          # (Don't use WITH_EXTERNAL as it requires a CMakeLists.txt in external dir)
-          #
-          # Read recommended paths from the external package
-          # Use the exact CMAKE_PREFIX_PATH from cmake_prefix_path_ryz.txt
           $cmakePrefixPath = "C:/external/zlib;C:/external/libpng;C:/external/libjpeg;C:/external/curl;C:/external/openssl;C:/external/freetype;C:/external/ogg;C:/external/vorbis;C:/external/openal-soft;C:/external/boost;C:/external/lua;C:/external/luabind;C:/external/libxml2"
 
-          # Use Ninja generator - it respects compile flags better than VS generator
+          # Use Ninja generator for faster builds
           # Find cl.exe using where.exe (more reliable than relying on PATH in cmake)
           $ninjaPath = "C:/Program Files/Microsoft Visual Studio/2022/Enterprise/Common7/IDE/CommonExtensions/Microsoft/CMake/Ninja/ninja.exe"
           $clPath = (Get-Command cl.exe -ErrorAction SilentlyContinue).Source
@@ -331,12 +327,13 @@ jobs:
           }
           Write-Host "Found cl.exe at: $clPath"
 
-          # Set LIBXML_STATIC via environment variables - more reliable than CMAKE_*_FLAGS
-          # CMake uses these to initialize CMAKE_C_FLAGS and CMAKE_CXX_FLAGS
-          $env:CFLAGS = "/DLIBXML_STATIC"
-          $env:CXXFLAGS = "/DLIBXML_STATIC"
-          Write-Host "Set CFLAGS=$env:CFLAGS"
-          Write-Host "Set CXXFLAGS=$env:CXXFLAGS"
+          # IMPORTANT: Do NOT define LIBXML_STATIC!
+          # The Ryzom external package provides libxml2 as a DLL (libxml2.dll + libxml2.lib import library).
+          # When linking against a DLL:
+          # - Without LIBXML_STATIC: xmlexports.h uses __declspec(dllimport) -> linker expects __imp_xmlFree
+          # - With LIBXML_STATIC: xmlexports.h uses plain extern -> linker expects xmlFree (not in import lib!)
+          # The import library (libxml2.lib) contains __imp_xmlFree, so we must NOT use LIBXML_STATIC.
+          Write-Host "Using DLL linkage for libxml2 (no LIBXML_STATIC)"
 
           cmake .. -G Ninja `
             -DCMAKE_MAKE_PROGRAM="$ninjaPath" `
@@ -355,8 +352,6 @@ jobs:
             -DWITH_NELNS=OFF `
             -DWITH_SNOWBALLS=OFF `
             -DWITH_STATIC=ON `
-            -DWITH_STATIC_LIBXML2=ON `
-            -DLIBXML2_DEFINITIONS=-DLIBXML_STATIC `
             "-DCMAKE_PREFIX_PATH=$cmakePrefixPath" `
             -DLUA_INCLUDE_DIR=C:/external/lua/include `
             -DLUA_LIBRARIES=C:/external/lua/lib/lua51.lib `
@@ -389,18 +384,7 @@ jobs:
             -DOPENSSL_LIBRARIES="C:/external/openssl/lib/VC/libcrypto64MD.lib;C:/external/openssl/lib/VC/libssl64MD.lib" `
             -DCMAKE_FIND_USE_SYSTEM_ENVIRONMENT_PATH=FALSE
 
-          # Check CMake cache for LIBXML2_DEFINITIONS and CMAKE_CXX_FLAGS
-          Write-Host "`n=== CMake Cache Debug ==="
-          Get-Content CMakeCache.txt | Select-String -Pattern "LIBXML|CMAKE_CXX_FLAGS|CMAKE_C_FLAGS" | Select-Object -First 20
-
-          # Check compile_commands.json for actual flags if it exists
-          if (Test-Path "compile_commands.json") {
-            Write-Host "`n=== Compile flags for i_xml.cpp ==="
-            Get-Content compile_commands.json | Select-String -Pattern "i_xml" -Context 0,2
-          }
-
           Write-Host "`nBuilding RyzomCore..."
-          # Build all targets normally (LIBXML_STATIC is confirmed to be passed)
           cmake --build . --parallel 4 --target nelmisc nelnet nel3d nelsound nelsnd_lowlevel nelgeorges nelligo
           cmake --build . --parallel 2 --target nel_drv_opengl_win nel_drv_openal_win
 
@@ -454,7 +438,7 @@ jobs:
         uses: actions/cache/restore@v4
         with:
           path: C:/ryzomcore
-          key: ryzomcore-nel-v19
+          key: ryzomcore-nel-v20
           fail-on-cache-miss: true
 
       - name: Restore Dependencies Cache
@@ -494,7 +478,6 @@ jobs:
             -DBUILD_CLIENT=ON `
             -DBUILD_SERVER=OFF `
             -DWITH_STATIC=ON `
-            -DWITH_STATIC_LIBXML2=ON `
             -DWITH_STATIC_CURL=ON `
             -DNEL_PREFIX_PATH=C:/ryzomcore/build `
             -DCMAKE_PREFIX_PATH=C:/external `
@@ -611,7 +594,7 @@ jobs:
         uses: actions/cache/restore@v4
         with:
           path: C:/ryzomcore
-          key: ryzomcore-nel-v19
+          key: ryzomcore-nel-v20
           fail-on-cache-miss: true
 
       - name: Restore Dependencies Cache
