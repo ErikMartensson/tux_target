@@ -1,0 +1,140 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "version": "1.0",
+  "description": "Asset manifest for Tux Target client and server builds",
+  "lastUpdated": "2026-01-05",
+
+  "directories": {
+    "client": {
+      "required": ["texture", "shape", "font", "sound", "level"],
+      "optional": ["gui", "particle", "misc", "smiley"]
+    },
+    "server": {
+      "required": ["level", "lua", "module", "shape"],
+      "optional": ["texture", "font", "particle", "misc", "smiley", "sound"]
+    }
+  },
+
+  "extensions": {
+    "shape": [".shape"],
+    "texture": [".dds", ".tga"],
+    "font": [".ttf", ".pfb"],
+    "sound": [".ogg", ".wav", ".mp3"],
+    "lua": [".lua"],
+    "gui": [".xml", ".tga"],
+    "particle": [".ps"],
+    "config": [".cfg"]
+  },
+
+  "criticalFiles": {
+    "client": {
+      "config": [
+        "mtp_target_default.cfg"
+      ],
+      "shape": [
+        "sky.shape",
+        "entity_pingoo_close.shape",
+        "entity_pingoo_open.shape",
+        "entity_sphere_close.shape",
+        "entity_sphere_open.shape"
+      ],
+      "font": [
+        "cyberbit.ttf"
+      ]
+    },
+    "server": {
+      "lua": [
+        "level_default_server.lua",
+        "level_team_server.lua"
+      ],
+      "level": [
+        "level_classic.lua"
+      ]
+    },
+    "shared": {
+      "shape": [
+        "snow_ramp.shape",
+        "snow_target_50.shape",
+        "snow_target_100.shape",
+        "snow_target_300.shape"
+      ]
+    }
+  },
+
+  "runtimeDependencies": {
+    "client": {
+      "windows": {
+        "nelDrivers": [
+          "nel_drv_opengl_win_r.dll",
+          "nel_drv_openal_win_r.dll"
+        ],
+        "libs": [
+          "lua.dll",
+          "zlib.dll",
+          "freetype.dll",
+          "libpng16.dll",
+          "libxml2.dll",
+          "libcurl.dll",
+          "vorbisfile.dll",
+          "vorbis.dll",
+          "ogg.dll",
+          "OpenAL32.dll"
+        ]
+      },
+      "linux": {
+        "nelDrivers": [
+          "nel_drv_opengl.so",
+          "nel_drv_openal.so"
+        ]
+      }
+    },
+    "server": {
+      "windows": {
+        "libs": [
+          "lua.dll",
+          "zlib.dll"
+        ]
+      },
+      "linux": {}
+    }
+  },
+
+  "excludePatterns": {
+    "comment": "Files matching these patterns are excluded from builds",
+    "patterns": [
+      "*.bak",
+      "*.orig",
+      "*_test.*",
+      "README.md"
+    ]
+  },
+
+  "themeAssets": {
+    "comment": "Theme-specific assets needed for different level themes",
+    "snow": {
+      "status": "complete",
+      "shapePrefix": ["snow_"],
+      "texturePrefix": ["snow_"]
+    },
+    "wood": {
+      "status": "complete",
+      "shapePrefix": ["wood_"],
+      "texturePrefix": ["wood"]
+    },
+    "space": {
+      "status": "missing",
+      "shapePrefix": ["space_"],
+      "texturePrefix": ["space_"]
+    },
+    "sun": {
+      "status": "missing",
+      "shapePrefix": ["sun_"],
+      "texturePrefix": ["sun_"]
+    },
+    "city": {
+      "status": "partial",
+      "shapePrefix": ["city_"],
+      "texturePrefix": ["city_"]
+    }
+  }
+}
