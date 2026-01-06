@@ -17,10 +17,13 @@ set MAX_LOGS=5
 REM Determine directories
 set SCRIPT_DIR=%~dp0
 set PROJECT_DIR=%SCRIPT_DIR%..
-set CLIENT_DIR=%PROJECT_DIR%\build-client\bin\Release
 
-REM Check if client directory exists, fall back to legacy location
-if not exist "%CLIENT_DIR%" (
+REM Check for client (Ninja outputs to bin/, VS outputs to bin/Release/)
+set CLIENT_DIR=%PROJECT_DIR%\build-client\bin
+if not exist "%CLIENT_DIR%\tux-target.exe" (
+    set CLIENT_DIR=%PROJECT_DIR%\build-client\bin\Release
+)
+if not exist "%CLIENT_DIR%\tux-target.exe" (
     set CLIENT_DIR=%PROJECT_DIR%\build\bin\Release
 )
 

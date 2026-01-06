@@ -103,64 +103,10 @@ jobs:
 
           # ===========================================
           # REQUIRED FILES MANIFEST
-          # This is the definitive list of files needed for building.
-          # The cleanup step will preserve these, and verification will check them.
+          # Load from shared deps-manifest.ps1 (single source of truth)
           # ===========================================
-          $requiredLibs = @(
-            # Core libraries
-            "libxml2/lib/libxml2.lib",
-            "zlib/lib/zlib.lib",
-            "lua/lib/lua.lib",
-            "luabind/lib/luabind.lib",
-            # Networking
-            "curl/lib/libcurl_imp.lib",
-            "openssl/lib/VC/libcrypto64MD.lib",
-            "openssl/lib/VC/libssl64MD.lib",
-            # Graphics
-            "freetype/lib/freetype.lib",
-            "libpng/lib/libpng16.lib",
-            "libjpeg/lib/jpeg.lib",
-            # Audio
-            "ogg/lib/ogg.lib",
-            "vorbis/lib/vorbis.lib",
-            "vorbis/lib/vorbisfile.lib",
-            "openal-soft/lib/OpenAL32.lib"
-          )
-
-          $requiredDLLs = @(
-            "lua/bin/lua.dll",
-            "libxml2/bin/libxml2.dll",
-            "zlib/bin/zlib.dll",
-            "curl/bin/libcurl.dll",
-            "openssl/bin/libcrypto-1_1-x64.dll",
-            "openssl/bin/libssl-1_1-x64.dll",
-            "freetype/bin/freetype.dll",
-            "libpng/bin/libpng16.dll",
-            "libjpeg/bin/jpeg62.dll",
-            "ogg/bin/ogg.dll",
-            "vorbis/bin/vorbis.dll",
-            "vorbis/bin/vorbisfile.dll",
-            "openal-soft/bin/OpenAL32.dll"
-          )
-
-          $requiredHeaders = @(
-            "libxml2/include/libxml2/libxml/xmlversion.h",
-            "lua/include/lua.h",
-            "luabind/include/luabind/luabind.hpp",
-            "curl/include/curl/curl.h",
-            "openssl/include/openssl/ssl.h",
-            "zlib/include/zlib.h",
-            "freetype/include/freetype2/ft2build.h",
-            "libpng/include/png.h",
-            "libjpeg/include/jpeglib.h",
-            "ogg/include/ogg/ogg.h",
-            "vorbis/include/vorbis/vorbisfile.h",
-            "openal-soft/include/AL/al.h",
-            "boost/include/boost/version.hpp"
-          )
-
-          # Combine all required files for verification
-          $allRequiredFiles = $requiredLibs + $requiredDLLs + $requiredHeaders
+          . "${{ github.workspace }}/scripts/deps-manifest.ps1"
+          $allRequiredFiles = Get-AllRequiredFiles
 
           Write-Host "`n=== Verifying required files after extraction ==="
           $missingFiles = @()
@@ -195,18 +141,6 @@ jobs:
             }
           }
 
-          # Also remove Luabind debug lib
-          if (Test-Path "C:/external/luabind/lib/luabindd.lib") {
-            Remove-Item "C:/external/luabind/lib/luabindd.lib" -Force
-            Write-Host "Removed: C:/external/luabind/lib/luabindd.lib"
-          }
-
-          # Remove libxml2 debug lib
-          if (Test-Path "C:/external/libxml2/lib/libxml2d.lib") {
-            Remove-Item "C:/external/libxml2/lib/libxml2d.lib" -Force
-            Write-Host "Removed: C:/external/libxml2/lib/libxml2d.lib"
-          }
-
           # === AGGRESSIVE CLEANUP to reduce cache size ===
           Write-Host "`n=== Aggressive cleanup to reduce cache size ==="
           $beforeSize = (Get-ChildItem "C:/external" -Recurse | Measure-Object -Property Length -Sum).Sum / 1MB
@@ -223,15 +157,23 @@ jobs:
             Where-Object { $_.Name -match "^(doc|docs|documentation|sample|samples|test|tests|example|examples|man|manual|tutorial|tutorials|demo|demos)$" } |
             Remove-Item -Recurse -Force -ErrorAction SilentlyContinue
 
-          # Remove all debug libraries (*d.lib, *_d.lib, *_debug.lib)
-          # Use -cmatch for case-sensitive matching to avoid removing libs like libcrypto64MD.lib
-          Write-Host "Removing debug libraries..."
-          Get-ChildItem "C:/external" -Recurse -Filter "*.lib" -ErrorAction SilentlyContinue |
-            Where-Object { $_.Name -cmatch "d\.lib$|_d\.lib$|_debug\.lib$" } |
-            ForEach-Object {
-              Remove-Item $_.FullName -Force -ErrorAction SilentlyContinue
-              Write-Host "Removed debug lib: $($_.Name)"
+          # Remove known debug libraries explicitly
+          # NOTE: Don't use regex patterns like "d\.lib$" - they match luabind.lib (the 'd' in 'bind')
+          Write-Host "Removing known debug libraries..."
+          $knownDebugLibs = @(
+            "luabind/lib/luabindd.lib",
+            "libxml2/lib/libxml2d.lib",
+            "zlib/lib/zlibd.lib",
+            "libpng/lib/libpng16d.lib",
+            "freetype/lib/freetyped.lib"
+          )
+          foreach ($lib in $knownDebugLibs) {
+            $fullPath = "C:/external/$lib"
+            if (Test-Path $fullPath) {
+              Remove-Item $fullPath -Force -ErrorAction SilentlyContinue
+              Write-Host "Removed debug lib: $lib"
             }
+          }
 
           # Remove CMake package config files (not needed at runtime)
           Write-Host "Removing CMake config files..."
@@ -604,6 +546,9 @@ jobs:
         with:
           arch: x64
 
+      - name: Install Ninja
+        run: choco install ninja -y
+
       - name: Restore RyzomCore Cache
         uses: actions/cache/restore@v4
         with:
@@ -622,69 +567,19 @@ jobs:
       - name: Verify Required Files
         shell: pwsh
         run: |
-          Write-Host "=== Verifying all required files for client build ==="
-
-          # Same manifest as in build-deps (keep in sync!)
-          $requiredLibs = @(
-            "libxml2/lib/libxml2.lib",
-            "zlib/lib/zlib.lib",
-            "lua/lib/lua.lib",
-            "luabind/lib/luabind.lib",
-            "curl/lib/libcurl_imp.lib",
-            "openssl/lib/VC/libcrypto64MD.lib",
-            "openssl/lib/VC/libssl64MD.lib",
-            "freetype/lib/freetype.lib",
-            "libpng/lib/libpng16.lib",
-            "libjpeg/lib/jpeg.lib",
-            "ogg/lib/ogg.lib",
-            "vorbis/lib/vorbis.lib",
-            "vorbis/lib/vorbisfile.lib",
-            "openal-soft/lib/OpenAL32.lib"
-          )
-
-          $requiredDLLs = @(
-            "lua/bin/lua.dll",
-            "libxml2/bin/libxml2.dll",
-            "zlib/bin/zlib.dll",
-            "curl/bin/libcurl.dll",
-            "openssl/bin/libcrypto-1_1-x64.dll",
-            "openssl/bin/libssl-1_1-x64.dll",
-            "freetype/bin/freetype.dll",
-            "libpng/bin/libpng16.dll",
-            "libjpeg/bin/jpeg62.dll",
-            "ogg/bin/ogg.dll",
-            "vorbis/bin/vorbis.dll",
-            "vorbis/bin/vorbisfile.dll",
-            "openal-soft/bin/OpenAL32.dll"
-          )
-
-          $allRequired = $requiredLibs + $requiredDLLs
-          $missing = @()
-
-          foreach ($file in $allRequired) {
-            $fullPath = "C:/external/$file"
-            if (Test-Path $fullPath) {
-              Write-Host "[OK] $file"
-            } else {
-              $missing += $file
-              Write-Host "[MISSING] $file"
-            }
-          }
-
-          if ($missing.Count -gt 0) {
-            Write-Error "Missing $($missing.Count) required files! Cache may be corrupted."
-            exit 1
-          }
-          Write-Host "`nAll $($allRequired.Count) required files verified"
+          # Use shared deps-manifest.ps1 (single source of truth)
+          . "${{ github.workspace }}/scripts/deps-manifest.ps1"
+          $env:TUXDEPS_PATH = "C:/external"
+          Test-DepsInstalled -DepsPath "C:/external"
 
       - name: Configure CMake (Client)
         shell: pwsh
         run: |
           mkdir build-client
           cd build-client
-          # Use :FILEPATH type to ensure CMake treats these as cache variables
-          # that won't be overwritten by find modules
-          cmake .. -G "Visual Studio 17 2022" -A x64 `
+          # Use Ninja generator for faster builds (consistent with local builds)
+          cmake .. -G Ninja `
+            -DCMAKE_BUILD_TYPE=Release `
             -DBUILD_CLIENT=ON `
             -DBUILD_SERVER=OFF `
             -DWITH_STATIC=ON `
@@ -713,101 +608,29 @@ jobs:
             -DOGG_LIBRARY:FILEPATH=C:/external/ogg/lib/ogg.lib
 
       - name: Build Client
-        run: cmake --build build-client --config ${{ env.BUILD_TYPE }} --parallel 4
+        run: cmake --build build-client --parallel 4
 
       - name: Prepare Client Artifact
         shell: pwsh
         run: |
-          $releaseDir = "build-client/bin/${{ env.BUILD_TYPE }}"
-          $depsDir = "C:/external"
-
-          # Copy NeL drivers (Ninja outputs to bin/ directly, no Release subdirectory)
-          if (Test-Path "C:/ryzomcore/build/bin/nel_drv_opengl_win_r.dll") {
-            Copy-Item "C:/ryzomcore/build/bin/nel_drv_opengl_win_r.dll" "$releaseDir/"
-          }
-          if (Test-Path "C:/ryzomcore/build/bin/nel_drv_openal_win_r.dll") {
-            Copy-Item "C:/ryzomcore/build/bin/nel_drv_openal_win_r.dll" "$releaseDir/"
-          }
-
-          # Copy runtime DLLs from dependencies
-          $dllSources = @(
-            "$depsDir/lua/bin/lua.dll",
-            "$depsDir/libxml2/bin/libxml2.dll",
-            "$depsDir/zlib/bin/zlib.dll",
-            "$depsDir/curl/bin/libcurl.dll",
-            "$depsDir/openssl/bin/libcrypto-1_1-x64.dll",
-            "$depsDir/openssl/bin/libssl-1_1-x64.dll",
-            "$depsDir/freetype/bin/freetype.dll",
-            "$depsDir/libpng/bin/libpng16.dll",
-            "$depsDir/libjpeg/bin/jpeg62.dll",
-            "$depsDir/ogg/bin/ogg.dll",
-            "$depsDir/vorbis/bin/vorbis.dll",
-            "$depsDir/vorbis/bin/vorbisfile.dll",
-            "$depsDir/openal-soft/bin/OpenAL32.dll"
-          )
-          foreach ($dll in $dllSources) {
-            if (Test-Path $dll) {
-              Copy-Item $dll "$releaseDir/" -ErrorAction SilentlyContinue
-              Write-Host "Copied: $dll"
-            } else {
-              Write-Warning "DLL not found: $dll"
-            }
-          }
-
-          # Copy ALL game data (fonts, textures, shapes, levels, etc.)
-          Write-Host "Copying game data..."
-          if (Test-Path "data") {
-            New-Item -ItemType Directory -Force -Path "$releaseDir/data" | Out-Null
-            Copy-Item -Recurse -Force "data/*" "$releaseDir/data/"
-            Write-Host "Copied data directory"
-          }
-
-          # Copy fonts from RyzomCore samples (required for client)
-          $ryzomFontDir = "C:/ryzomcore/nel/samples/3d"
-          if (Test-Path "$ryzomFontDir/cegui/datafiles/n019003l.pfb") {
-            Copy-Item "$ryzomFontDir/cegui/datafiles/n019003l.pfb" "$releaseDir/data/font/"
-            Write-Host "Copied: n019003l.pfb"
-          }
-          if (Test-Path "$ryzomFontDir/font/beteckna.ttf") {
-            Copy-Item "$ryzomFontDir/font/beteckna.ttf" "$releaseDir/data/font/bigfont.ttf"
-            Write-Host "Copied: bigfont.ttf"
-          }
-
-          # Copy GUI from client/data/gui if exists
-          if (Test-Path "client/data/gui") {
-            New-Item -ItemType Directory -Force -Path "$releaseDir/data/gui" | Out-Null
-            Copy-Item -Recurse -Force "client/data/gui/*" "$releaseDir/data/gui/"
-            Write-Host "Copied GUI files"
-          }
-
-          # Create additional directories
-          New-Item -ItemType Directory -Force -Path "$releaseDir/cache" | Out-Null
-          New-Item -ItemType Directory -Force -Path "$releaseDir/replay" | Out-Null
-          New-Item -ItemType Directory -Force -Path "$releaseDir/logs" | Out-Null
-
-          # Copy config
-          if (Test-Path "data/config/mtp_target_default.cfg") {
-            Copy-Item "data/config/mtp_target_default.cfg" "$releaseDir/"
-          } elseif (Test-Path "client/mtp_target_default.cfg") {
-            Copy-Item "client/mtp_target_default.cfg" "$releaseDir/"
-          }
-
-          # Create tux-target.cfg wrapper
-          if (!(Test-Path "$releaseDir/tux-target.cfg")) {
-            '// This file tells the client where to find the main config' | Set-Content "$releaseDir/tux-target.cfg"
-            'RootConfigFilename = "mtp_target_default.cfg";' | Add-Content "$releaseDir/tux-target.cfg"
-            Write-Host "Created: tux-target.cfg"
-          }
+          # Use shared post-build.ps1 script (single source of truth)
+          $env:TUXDEPS_PATH = "C:/external"
+          & "${{ github.workspace }}/scripts/post-build.ps1" `
+            -BuildType Client `
+            -BuildDir "build-client/bin" `
+            -DepsDir "C:/external" `
+            -RyzomCoreDir "C:/ryzomcore" `
+            -UseNinjaPaths
 
       - name: Upload Client Artifact
         uses: actions/upload-artifact@v4
         with:
           name: tux-target-client-windows-${{ env.BUILD_TYPE }}
           path: |
-            build-client/bin/${{ env.BUILD_TYPE }}/tux-target.exe
-            build-client/bin/${{ env.BUILD_TYPE }}/*.dll
-            build-client/bin/${{ env.BUILD_TYPE }}/data/
-            build-client/bin/${{ env.BUILD_TYPE }}/*.cfg
+            build-client/bin/tux-target.exe
+            build-client/bin/*.dll
+            build-client/bin/data/
+            build-client/bin/*.cfg
           retention-days: 30
 
   # ============================================
@@ -826,6 +649,9 @@ jobs:
         uses: ilammy/msvc-dev-cmd@v1
         with:
           arch: x64
+
+      - name: Install Ninja
+        run: choco install ninja -y
 
       - name: Restore RyzomCore Cache
         uses: actions/cache/restore@v4
@@ -889,7 +715,9 @@ jobs:
         run: |
           mkdir build-server
           cd build-server
-          cmake .. -G "Visual Studio 17 2022" -A x64 `
+          # Use Ninja generator for faster builds (consistent with local builds)
+          cmake .. -G Ninja `
+            -DCMAKE_BUILD_TYPE=Release `
             -DBUILD_CLIENT=OFF `
             -DBUILD_SERVER=ON `
             -DNEL_PREFIX_PATH=C:/ryzomcore/build `
@@ -908,86 +736,30 @@ jobs:
             -DODE_INCLUDE_DIR=C:/external/ode/include `
             -DODE_LIBRARY=C:/external/ode/lib/ode_doubles.lib
 
-      - name: Verify CMake Server Config
-        shell: pwsh
-        run: |
-          Write-Host "=== Checking generated build files ==="
-          # Check if the include path is in the vcxproj
-          $vcxproj = "build-server/server/src/tux-target-srv.vcxproj"
-          if (Test-Path $vcxproj) {
-            Write-Host "`nAdditionalIncludeDirectories from vcxproj:"
-            Select-String -Path $vcxproj -Pattern "AdditionalIncludeDirectories" |
-              ForEach-Object { Write-Host $_.Line }
-
-            Write-Host "`nODE paths in vcxproj:"
-            Select-String -Path $vcxproj -Pattern "ode" -CaseSensitive:$false |
-              ForEach-Object { Write-Host $_.Line }
-          } else {
-            Write-Host "vcxproj not found at expected path"
-            Get-ChildItem "build-server" -Recurse -Filter "*.vcxproj" |
-              Select-Object FullName |
-              ForEach-Object { Write-Host "Found: $($_.FullName)" }
-          }
-
       - name: Build Server
-        run: cmake --build build-server --config ${{ env.BUILD_TYPE }} --parallel 4
+        run: cmake --build build-server --parallel 4
 
       - name: Prepare Server Artifact
         shell: pwsh
         run: |
-          $releaseDir = "build-server/bin/${{ env.BUILD_TYPE }}"
-          $depsDir = "C:/external"
-
-          # Copy runtime DLLs from dependencies
-          # Note: ODE is statically linked (x64-windows-static-md), no DLL needed
-          $dllSources = @(
-            "$depsDir/lua/bin/lua.dll",
-            "$depsDir/zlib/bin/zlib.dll",
-            "$depsDir/freetype/bin/freetype.dll",
-            "$depsDir/libpng/bin/libpng16.dll",
-            "$depsDir/libjpeg/bin/jpeg62.dll"
-          )
-          foreach ($dll in $dllSources) {
-            if (Test-Path $dll) {
-              Copy-Item $dll "$releaseDir/" -ErrorAction SilentlyContinue
-              Write-Host "Copied: $dll"
-            } else {
-              Write-Warning "DLL not found: $dll"
-            }
-          }
-
-          # Copy ALL game data (shapes, textures, levels, etc.) - server serves these to clients
-          Write-Host "Copying game data..."
-          if (Test-Path "data") {
-            New-Item -ItemType Directory -Force -Path "$releaseDir/data" | Out-Null
-            Copy-Item -Recurse -Force "data/*" "$releaseDir/data/"
-            Write-Host "Copied data directory"
-          }
-
-          # Copy helpers.lua (required for include() function in level scripts)
-          if (Test-Path "server/data/misc/helpers.lua") {
-            Copy-Item "server/data/misc/helpers.lua" "$releaseDir/data/"
-            Write-Host "Copied: helpers.lua"
-          }
-
-          # Create additional directories
-          New-Item -ItemType Directory -Force -Path "$releaseDir/logs" | Out-Null
-
-          # Copy config
-          if (Test-Path "server/mtp_target_service_default.cfg") {
-            Copy-Item "server/mtp_target_service_default.cfg" "$releaseDir/mtp_target_service.cfg"
-            Write-Host "Copied: mtp_target_service.cfg"
-          }
+          # Use shared post-build.ps1 script (single source of truth)
+          $env:TUXDEPS_PATH = "C:/external"
+          & "${{ github.workspace }}/scripts/post-build.ps1" `
+            -BuildType Server `
+            -BuildDir "build-server/bin" `
+            -DepsDir "C:/external" `
+            -RyzomCoreDir "C:/ryzomcore" `
+            -UseNinjaPaths
 
       - name: Upload Server Artifact
         uses: actions/upload-artifact@v4
         with:
           name: tux-target-server-windows-${{ env.BUILD_TYPE }}
           path: |
-            build-server/bin/${{ env.BUILD_TYPE }}/tux-target-srv.exe
-            build-server/bin/${{ env.BUILD_TYPE }}/*.dll
-            build-server/bin/${{ env.BUILD_TYPE }}/data/
-            build-server/bin/${{ env.BUILD_TYPE }}/*.cfg
+            build-server/bin/tux-target-srv.exe
+            build-server/bin/*.dll
+            build-server/bin/data/
+            build-server/bin/*.cfg
           retention-days: 30
 
   # ============================================

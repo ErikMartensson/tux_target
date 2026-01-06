@@ -49,13 +49,26 @@ exit /b 1
 :done_parsing
 
 REM Set default release directory if not specified
+REM Ninja outputs to bin/, VS outputs to bin/Release/ - check Ninja first
 if "%RELEASE_DIR%"=="" (
     if %CLIENT_ONLY%==1 (
-        set RELEASE_DIR=%PROJECT_DIR%\build-client\bin\Release
+        if exist "%PROJECT_DIR%\build-client\bin\tux-target.exe" (
+            set RELEASE_DIR=%PROJECT_DIR%\build-client\bin
+        ) else (
+            set RELEASE_DIR=%PROJECT_DIR%\build-client\bin\Release
+        )
     ) else if %SERVER_ONLY%==1 (
-        set RELEASE_DIR=%PROJECT_DIR%\build-server\bin\Release
+        if exist "%PROJECT_DIR%\build-server\bin\tux-target-srv.exe" (
+            set RELEASE_DIR=%PROJECT_DIR%\build-server\bin
+        ) else (
+            set RELEASE_DIR=%PROJECT_DIR%\build-server\bin\Release
+        )
     ) else (
-        set RELEASE_DIR=%PROJECT_DIR%\build\bin\Release
+        if exist "%PROJECT_DIR%\build\bin\tux-target.exe" (
+            set RELEASE_DIR=%PROJECT_DIR%\build\bin
+        ) else (
+            set RELEASE_DIR=%PROJECT_DIR%\build\bin\Release
+        )
     )
 )
 
@@ -91,15 +104,26 @@ if %SERVER_ONLY%==1 goto skip_client_setup
 
 REM 1. Copy NeL Driver DLLs (Client needs graphics + audio drivers)
 echo %STEP%. Copying NeL driver DLLs...
-if exist "%RYZOMCORE_DIR%\build\bin\Release\nel_drv_opengl_win_r.dll" (
-    copy /Y "%RYZOMCORE_DIR%\build\bin\Release\nel_drv_opengl_win_r.dll" "%RELEASE_DIR%\" >nul
+
+REM Check for local ryzomcore first, then global
+set RYZOMCORE_ACTUAL=%PROJECT_DIR%\ryzomcore
+if not exist "%RYZOMCORE_ACTUAL%\build" set RYZOMCORE_ACTUAL=%RYZOMCORE_DIR%
+
+REM Ninja outputs to bin/, VS outputs to bin/Release/ - check Ninja first
+set RYZOMCORE_BIN=%RYZOMCORE_ACTUAL%\build\bin
+if not exist "%RYZOMCORE_BIN%\nel_drv_opengl_win_r.dll" (
+    set RYZOMCORE_BIN=%RYZOMCORE_ACTUAL%\build\bin\Release
+)
+
+if exist "%RYZOMCORE_BIN%\nel_drv_opengl_win_r.dll" (
+    copy /Y "%RYZOMCORE_BIN%\nel_drv_opengl_win_r.dll" "%RELEASE_DIR%\" >nul
     echo    + Copied: nel_drv_opengl_win_r.dll
 ) else (
     echo    ! Missing: nel_drv_opengl_win_r.dll
 )
 
-if exist "%RYZOMCORE_DIR%\build\bin\Release\nel_drv_openal_win_r.dll" (
-    copy /Y "%RYZOMCORE_DIR%\build\bin\Release\nel_drv_openal_win_r.dll" "%RELEASE_DIR%\" >nul
+if exist "%RYZOMCORE_BIN%\nel_drv_openal_win_r.dll" (
+    copy /Y "%RYZOMCORE_BIN%\nel_drv_openal_win_r.dll" "%RELEASE_DIR%\" >nul
     echo    + Copied: nel_drv_openal_win_r.dll
 ) else (
     echo    ! Missing: nel_drv_openal_win_r.dll
@@ -111,15 +135,15 @@ REM 2. Copy Font Files (Client-specific)
 echo %STEP%. Copying font files...
 if not exist "%RELEASE_DIR%\data\font" mkdir "%RELEASE_DIR%\data\font"
 
-if exist "%RYZOMCORE_DIR%\nel\samples\3d\cegui\datafiles\n019003l.pfb" (
-    copy /Y "%RYZOMCORE_DIR%\nel\samples\3d\cegui\datafiles\n019003l.pfb" "%RELEASE_DIR%\data\font\" >nul
+if exist "%RYZOMCORE_ACTUAL%\nel\samples\3d\cegui\datafiles\n019003l.pfb" (
+    copy /Y "%RYZOMCORE_ACTUAL%\nel\samples\3d\cegui\datafiles\n019003l.pfb" "%RELEASE_DIR%\data\font\" >nul
     echo    + Copied: n019003l.pfb
 ) else (
     echo    ! Missing: n019003l.pfb
 )
 
-if exist "%RYZOMCORE_DIR%\nel\samples\3d\font\beteckna.ttf" (
-    copy /Y "%RYZOMCORE_DIR%\nel\samples\3d\font\beteckna.ttf" "%RELEASE_DIR%\data\font\bigfont.ttf" >nul
+if exist "%RYZOMCORE_ACTUAL%\nel\samples\3d\font\beteckna.ttf" (
+    copy /Y "%RYZOMCORE_ACTUAL%\nel\samples\3d\font\beteckna.ttf" "%RELEASE_DIR%\data\font\bigfont.ttf" >nul
     echo    + Copied: bigfont.ttf
 ) else (
     echo    ! Missing: beteckna.ttf
@@ -344,18 +368,24 @@ REM ============================================
 REM Copy dependency DLLs (Required for both client and server)
 echo %STEP%. Copying dependency DLLs...
 
-REM Determine base deps directory
+REM Determine base deps directory (check repo deps/ first, then env var, then legacy path)
 set DEPS_BASE=
-if defined TUXDEPS_PREFIX_PATH (
+if exist "%PROJECT_DIR%\deps\CMakeLists.txt" (
+    set DEPS_BASE=%PROJECT_DIR%\deps
+) else if defined TUXDEPS_PATH (
+    if exist "%TUXDEPS_PATH%" set DEPS_BASE=%TUXDEPS_PATH%
+) else if defined TUXDEPS_PREFIX_PATH (
     if exist "%TUXDEPS_PREFIX_PATH%" set DEPS_BASE=%TUXDEPS_PREFIX_PATH%
 )
+REM Legacy fallback
 if "%DEPS_BASE%"=="" (
     if exist "C:\tux_target_deps" set DEPS_BASE=C:\tux_target_deps
 )
 
 if "%DEPS_BASE%"=="" (
     echo    ! Warning: Dependency directory not found
-    echo      Set TUXDEPS_PREFIX_PATH or ensure C:\tux_target_deps exists
+    echo      Run: scripts\setup-deps.ps1 to install dependencies
+    echo      Or set TUXDEPS_PATH environment variable
     echo.
     set /a STEP+=1
     goto skip_deps_copy

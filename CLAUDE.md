@@ -5,12 +5,15 @@ A penguin bowling/curling game where players roll down slopes and land on scorin
 ## Quick Start
 
 ```powershell
+# Prerequisites: Visual Studio 2022 Build Tools + Ninja (choco install ninja)
+
 # First-time setup: Install dependencies (~1.3GB download)
 .\scripts\setup-deps.ps1
 
-# Build RyzomCore/NeL first (one-time, see docs/BUILDING.md)
+# Build RyzomCore/NeL (one-time, ~5 min)
+.\scripts\setup-ryzomcore.ps1
 
-# Build game
+# Build game (auto-detects MSVC environment)
 .\scripts\build-client.bat
 .\scripts\build-server.bat
 
@@ -30,11 +33,15 @@ tux_target/
 │   ├── ode/                     # Physics engine (server only)
 │   └── ...
 │
-├── build-client/bin/Release/    # Client build output
+├── ryzomcore/                   # RyzomCore/NeL (git-ignored, created by setup-ryzomcore.ps1)
+│   ├── build/lib/               # NeL static libraries
+│   └── build/bin/               # NeL driver DLLs
+│
+├── build-client/bin/            # Client build output (Ninja)
 │   ├── tux-target.exe
 │   └── data/                    # Game assets (copied from data/)
 │
-├── build-server/bin/Release/    # Server build output
+├── build-server/bin/            # Server build output (Ninja)
 │   ├── tux-target-srv.exe
 │   ├── mtp_target_service.cfg   # RUNTIME CONFIG - edit this!
 │   └── data/                    # Game assets (copied from data/)
@@ -52,8 +59,9 @@ tux_target/
 │
 ├── scripts/                     # Build and run scripts
 │   ├── setup-deps.ps1           # Downloads dependencies to deps/
-│   ├── build-client.bat
-│   ├── build-server.bat
+│   ├── setup-ryzomcore.ps1      # Clones and builds RyzomCore/NeL
+│   ├── build-client.bat         # Builds client with Ninja
+│   ├── build-server.bat         # Builds server with Ninja
 │   ├── run-client.bat           # Supports: --lan <host> --user <name>
 │   ├── run-server.bat
 │   └── post-build.bat           # Copies data/ to build directories
@@ -73,7 +81,7 @@ tux_target/
 
 ## Configuration
 
-**Server runtime config:** `build-server/bin/Release/mtp_target_service.cfg`
+**Server runtime config:** `build-server/bin/mtp_target_service.cfg`
 
 This is the file that matters at runtime. The template at `server/mtp_target_service_default.cfg` is only copied on first build.
 
@@ -85,7 +93,7 @@ LevelPlaylist = { };                   # Empty = normal rotation
 
 ## Testing Levels
 
-1. Edit `build-server/bin/Release/mtp_target_service.cfg`
+1. Edit `build-server/bin/mtp_target_service.cfg`
 2. Set `LevelPlaylist = { "level_name" };`
 3. Start server: `.\scripts\run-server.bat`
 4. Start client: `.\scripts\run-client.bat --lan localhost --user tester`
@@ -141,14 +149,14 @@ LevelPlaylist = { };                   # Empty = normal rotation
 
 ## Debug / Logs
 
-**Server log:** `build-server/bin/Release/mtp_target_service.log`
+**Server log:** `build-server/bin/mtp_target_service.log`
 
 Watch in real-time:
 ```bash
-tail -f build-server/bin/Release/mtp_target_service.log
+tail -f build-server/bin/mtp_target_service.log
 ```
 
-**Client log:** Check console output or `build-client/bin/Release/` for any `.log` files.
+**Client log:** Check console output or `build-client/bin/` for any `.log` files.
 
 **Common log patterns:**
 - `Loading level: level_name` - Level loading started

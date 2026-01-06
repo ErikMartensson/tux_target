@@ -23,10 +23,10 @@ This guide covers building the MTP Target game server and client from source on 
 # 1. Install dependencies (downloads ~1.3GB, installs ODE via vcpkg)
 .\scripts\setup-deps.ps1
 
-# 2. Build RyzomCore/NeL (one-time, ~15 min)
-#    See "Step 2: Build RyzomCore" section below
+# 2. Build RyzomCore/NeL (one-time, ~5 min with Ninja)
+.\scripts\setup-ryzomcore.ps1
 
-# 3. Build client and server
+# 3. Build client and server (auto-detects MSVC environment)
 .\scripts\build-client.bat
 .\scripts\build-server.bat
 
@@ -44,17 +44,25 @@ This guide covers building the MTP Target game server and client from source on 
 **Required:**
 - Visual Studio 2022 Build Tools (or full VS2022) with C++ Desktop Development
 - CMake 3.20+
+- Ninja build system
 - Git for Windows / Git Bash
 - PowerShell 5.1+
-
-**Optional (for server builds):**
-- vcpkg (for ODE physics library)
+- vcpkg (for ODE physics library - required for server builds)
 
 ### Installing Visual Studio Build Tools
 
 1. Download from https://visualstudio.microsoft.com/downloads/
 2. Select "Build Tools for Visual Studio 2022"
 3. In installer, select "Desktop development with C++"
+
+### Installing Ninja
+
+```powershell
+# Using Chocolatey (recommended)
+choco install ninja
+
+# Or download from https://ninja-build.org/
+```
 
 ### Installing vcpkg (for server builds)
 
@@ -118,15 +126,39 @@ $env:TUXDEPS_PATH = "D:\my-deps"
 
 RyzomCore provides the NeL game engine libraries. This is a one-time build.
 
+### Automated Setup (Recommended)
+
+```powershell
+# Auto-detects MSVC environment - no special shell required
+.\scripts\setup-ryzomcore.ps1
+
+# Force rebuild
+.\scripts\setup-ryzomcore.ps1 -Force
+
+# Just rebuild (don't re-clone)
+.\scripts\setup-ryzomcore.ps1 -BuildOnly
+```
+
+The script:
+- Clones RyzomCore to `ryzomcore/` in the repo (git-ignored)
+- Uses Ninja for fast builds (~5 minutes)
+- Automatically finds dependencies from `deps/`
+- Auto-detects and configures MSVC environment
+
+### Manual Setup
+
+If you prefer manual control:
+
 ```powershell
 # Clone RyzomCore
-git clone --depth 1 https://github.com/ryzom/ryzomcore.git C:\ryzomcore
-cd C:\ryzomcore
+git clone --depth 1 https://github.com/ryzom/ryzomcore.git ryzomcore
+cd ryzomcore
 mkdir build
 cd build
 
-# Configure (point to our dependencies)
-cmake .. -G "Visual Studio 17 2022" -A x64 `
+# Configure with Ninja (point to our dependencies)
+cmake .. -G Ninja `
+    -DCMAKE_BUILD_TYPE=Release `
     -DWITH_SOUND=ON `
     -DWITH_NEL=ON `
     -DWITH_NEL_TOOLS=OFF `
@@ -134,20 +166,20 @@ cmake .. -G "Visual Studio 17 2022" -A x64 `
     -DWITH_NEL_SAMPLES=OFF `
     -DWITH_RYZOM=OFF `
     -DWITH_STATIC=ON `
-    -DCMAKE_PREFIX_PATH="C:/path/to/tux_target/deps"
+    -DCMAKE_PREFIX_PATH="$(pwd)/../deps"
 
-# Build (takes ~15 minutes)
-cmake --build . --config Release --parallel 4 --target nelmisc nel3d nelnet nelsound nelsnd_lowlevel nelgeorges nelligo
-cmake --build . --config Release --parallel 2 --target nel_drv_opengl_win nel_drv_openal_win
+# Build (takes ~5 minutes)
+cmake --build . --parallel 4 --target nelmisc nel3d nelnet nelsound nelsnd_lowlevel nelgeorges nelligo
+cmake --build . --parallel 2 --target nel_drv_opengl_win nel_drv_openal_win
 ```
 
 ### Verify RyzomCore build
 
-Check that these files exist:
-- `C:\ryzomcore\build\lib\Release\nelmisc_r.lib`
-- `C:\ryzomcore\build\lib\Release\nel3d_r.lib`
-- `C:\ryzomcore\build\bin\Release\nel_drv_opengl_win_r.dll`
-- `C:\ryzomcore\build\bin\Release\nel_drv_openal_win_r.dll`
+Check that these files exist (Ninja outputs to `lib/` and `bin/`, not `lib/Release/`):
+- `ryzomcore/build/lib/nelmisc_r.lib`
+- `ryzomcore/build/lib/nel3d_r.lib`
+- `ryzomcore/build/bin/nel_drv_opengl_win_r.dll`
+- `ryzomcore/build/bin/nel_drv_openal_win_r.dll`
 
 ### Custom RyzomCore location
 
@@ -195,8 +227,10 @@ $env:NEL_PREFIX_PATH = "D:\my-ryzomcore\build"
 
 ### Output Structure
 
+Ninja outputs to `bin/` (not `bin/Release/` like Visual Studio):
+
 ```
-build-client/bin/Release/
+build-client/bin/
 ├── tux-target.exe
 ├── *.dll (runtime dependencies)
 ├── data/
@@ -207,7 +241,7 @@ build-client/bin/Release/
 │   └── texture/
 └── mtp_target_default.cfg
 
-build-server/bin/Release/
+build-server/bin/
 ├── tux-target-srv.exe
 ├── *.dll (runtime dependencies)
 ├── data/
@@ -234,11 +268,11 @@ build-server/bin/Release/
 
 ```powershell
 # Server
-cd build-server\bin\Release
+cd build-server\bin
 .\tux-target-srv.exe
 
 # Client
-cd build-client\bin\Release
+cd build-client\bin
 .\tux-target.exe
 ```
 
@@ -304,7 +338,7 @@ C:\vcpkg\bootstrap-vcpkg.bat
 ### CMake Errors
 
 **"Could NOT find NeL"**
-- Ensure RyzomCore is built at `C:\ryzomcore`
+- Run `.\scripts\setup-ryzomcore.ps1` first
 - Or set: `$env:NEL_PREFIX_PATH = "D:\your\path\to\ryzomcore\build"`
 
 **"Could NOT find CURL"**
@@ -329,7 +363,7 @@ C:\vcpkg\bootstrap-vcpkg.bat
 
 **"nel_drv_opengl_win_r.dll not found"**
 - Run post-build script
-- Or manually copy from `C:\ryzomcore\build\bin\Release\`
+- Or manually copy from `ryzomcore/build/bin/`
 
 **"data not found"**
 - Run from the build directory (where `data/` exists)

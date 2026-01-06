@@ -2,7 +2,7 @@
 REM
 REM Build Tux Target Server (Windows)
 REM
-REM Prerequisites: Run setup-deps.bat first to install dependencies
+REM Prerequisites: Run setup-deps.ps1 first to install dependencies
 REM
 REM Usage:
 REM   scripts\build-server.bat              - Build server
@@ -11,6 +11,10 @@ REM   scripts\build-server.bat --skip-post-build  - Skip post-build setup
 REM
 
 setlocal enabledelayedexpansion
+
+REM Setup MSVC environment if needed
+call "%~dp0setup-msvc-env.bat"
+if %ERRORLEVEL% neq 0 exit /b %ERRORLEVEL%
 
 REM Parse arguments
 set CLEAN_BUILD=0
@@ -72,16 +76,32 @@ if "%NUM_CORES%"=="" set NUM_CORES=4
 echo Using %NUM_CORES% CPU cores for build
 echo.
 
-REM Set NeL path (check environment variable first, then use default)
-set NEL_PATH=C:/ryzomcore/build
-if defined NEL_PREFIX_PATH set NEL_PATH=%NEL_PREFIX_PATH%
+REM Set NeL path (check repo ryzomcore/ first, then env var, then default)
+set NEL_PATH=
+if exist "%PROJECT_DIR%\ryzomcore\build\lib\nelmisc_r.lib" (
+    set NEL_PATH=%PROJECT_DIR%/ryzomcore/build
+    echo Using local ryzomcore/
+) else if defined NEL_PREFIX_PATH (
+    set NEL_PATH=%NEL_PREFIX_PATH%
+    echo Using NEL_PREFIX_PATH: %NEL_PREFIX_PATH%
+) else if exist "C:\ryzomcore\build\lib\nelmisc_r.lib" (
+    set NEL_PATH=C:/ryzomcore/build
+    echo Using C:/ryzomcore/build
+) else (
+    echo.
+    echo ERROR: RyzomCore/NeL not found!
+    echo Please run: powershell -ExecutionPolicy Bypass -File scripts\setup-ryzomcore.ps1
+    echo.
+    exit /b 1
+)
 echo NeL path: %NEL_PATH%
 echo.
 
-REM Configure CMake using shared configuration
+REM Configure CMake using Ninja generator
 echo Configuring CMake (Server)...
 cmake .. ^
-    -G "Visual Studio 17 2022" ^
+    -G Ninja ^
+    -DCMAKE_BUILD_TYPE=Release ^
     -DBUILD_CLIENT=OFF ^
     -DBUILD_SERVER=ON ^
     -DNEL_PREFIX_PATH=%NEL_PATH% ^
@@ -107,9 +127,9 @@ if %ERRORLEVEL% neq 0 (
 )
 echo.
 
-REM Build
-echo Building server with %NUM_CORES% cores...
-cmake --build . --config Release -- /m:%NUM_CORES%
+REM Build (Ninja uses all cores by default)
+echo Building server...
+cmake --build .
 
 if %ERRORLEVEL% neq 0 (
     echo Build failed!
@@ -119,9 +139,9 @@ if %ERRORLEVEL% neq 0 (
 echo.
 echo Build complete!
 
-REM Check for executable
-if exist "%BUILD_DIR%\bin\Release\tux-target-srv.exe" (
-    echo Server executable: %BUILD_DIR%\bin\Release\tux-target-srv.exe
+REM Check for executable (Ninja outputs to bin/, not bin/Release/)
+if exist "%BUILD_DIR%\bin\tux-target-srv.exe" (
+    echo Server executable: %BUILD_DIR%\bin\tux-target-srv.exe
 ) else (
     echo Warning: Server executable not found
 )
@@ -130,7 +150,7 @@ REM Run post-build setup
 if %SKIP_POST_BUILD%==0 (
     echo.
     echo Running post-build setup...
-    call "%SCRIPT_DIR%post-build.bat" --server-only --build-dir "%BUILD_DIR%\bin\Release"
+    call "%SCRIPT_DIR%post-build.bat" --server-only --build-dir "%BUILD_DIR%\bin"
 )
 
 echo.

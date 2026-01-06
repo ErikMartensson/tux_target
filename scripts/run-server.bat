@@ -14,10 +14,13 @@ set MAX_LOGS=5
 REM Determine directories
 set SCRIPT_DIR=%~dp0
 set PROJECT_DIR=%SCRIPT_DIR%..
-set SERVER_DIR=%PROJECT_DIR%\build-server\bin\Release
 
-REM Check if server directory exists, fall back to legacy location
-if not exist "%SERVER_DIR%" (
+REM Check for server (Ninja outputs to bin/, VS outputs to bin/Release/)
+set SERVER_DIR=%PROJECT_DIR%\build-server\bin
+if not exist "%SERVER_DIR%\tux-target-srv.exe" (
+    set SERVER_DIR=%PROJECT_DIR%\build-server\bin\Release
+)
+if not exist "%SERVER_DIR%\tux-target-srv.exe" (
     set SERVER_DIR=%PROJECT_DIR%\build\bin\Release
 )
 
