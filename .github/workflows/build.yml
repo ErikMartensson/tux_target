@@ -51,7 +51,7 @@ jobs:
         uses: actions/cache@v4
         with:
           path: C:/external
-          key: ryzom-external-2022q2-v15
+          key: ryzom-external-2022q2-v17
 
       - name: Download External Dependencies
         if: steps.cache-deps.outputs.cache-hit != 'true'
@@ -146,6 +146,18 @@ jobs:
           $beforeSize = (Get-ChildItem "C:/external" -Recurse | Measure-Object -Property Length -Sum).Sum / 1MB
           Write-Host "Size before cleanup: $([math]::Round($beforeSize, 2)) MB"
 
+          # Remove unused library directories (saves ~3.4GB)
+          Write-Host "`nRemoving unused libraries (from manifest)..."
+          $unusedLibs = Get-UnusedLibraries
+          foreach ($lib in $unusedLibs) {
+            $libPath = "C:/external/$lib"
+            if (Test-Path $libPath) {
+              $libSize = (Get-ChildItem $libPath -Recurse | Measure-Object -Property Length -Sum).Sum / 1MB
+              Remove-Item $libPath -Recurse -Force -ErrorAction SilentlyContinue
+              Write-Host "  Removed: $lib ($([math]::Round($libSize, 1)) MB)"
+            }
+          }
+
           # Remove all debug symbol files (.pdb)
           Write-Host "`nRemoving .pdb debug symbols..."
           Get-ChildItem "C:/external" -Recurse -Filter "*.pdb" -ErrorAction SilentlyContinue |
@@ -173,6 +185,15 @@ jobs:
               Remove-Item $fullPath -Force -ErrorAction SilentlyContinue
               Write-Host "Removed debug lib: $lib"
             }
+          }
+
+          # Remove boost debug libraries (saves ~500MB)
+          Write-Host "Removing boost debug libraries..."
+          $boostDebugLibs = Get-ChildItem "C:/external/boost/lib" -Filter "*-gd-*.lib" -ErrorAction SilentlyContinue
+          if ($boostDebugLibs) {
+            $boostDebugSize = ($boostDebugLibs | Measure-Object -Property Length -Sum).Sum / 1MB
+            $boostDebugLibs | Remove-Item -Force -ErrorAction SilentlyContinue
+            Write-Host "  Removed $($boostDebugLibs.Count) boost debug libs ($([math]::Round($boostDebugSize, 1)) MB)"
           }
 
           # Remove CMake package config files (not needed at runtime)
@@ -560,7 +581,7 @@ jobs:
         uses: actions/cache/restore@v4
         with:
           path: C:/external
-          key: ryzom-external-2022q2-v15
+          key: ryzom-external-2022q2-v17
           restore-keys: |
             ryzom-external-2022q2-
 
@@ -577,35 +598,10 @@ jobs:
         run: |
           mkdir build-client
           cd build-client
-          # Use Ninja generator for faster builds (consistent with local builds)
-          cmake .. -G Ninja `
-            -DCMAKE_BUILD_TYPE=Release `
-            -DBUILD_CLIENT=ON `
-            -DBUILD_SERVER=OFF `
-            -DWITH_STATIC=ON `
-            -DWITH_STATIC_CURL=ON `
-            -DNEL_PREFIX_PATH=C:/ryzomcore/build `
-            -DCMAKE_PREFIX_PATH=C:/external `
-            -DLUA_INCLUDE_DIR:PATH=C:/external/lua/include `
-            -DLUA_LIBRARIES:FILEPATH=C:/external/lua/lib/lua.lib `
-            -DLIBXML2_INCLUDE_DIR:PATH=C:/external/libxml2/include/libxml2 `
-            -DLIBXML2_LIBRARY:FILEPATH=C:/external/libxml2/lib/libxml2.lib `
-            -DZLIB_ROOT=C:/external/zlib `
-            -DZLIB_LIBRARY:FILEPATH=C:/external/zlib/lib/zlib.lib `
-            -DCURL_ROOT=C:/external/curl `
-            -DCURL_INCLUDE_DIR:PATH=C:/external/curl/include `
-            -DCURL_LIBRARY:FILEPATH=C:/external/curl/lib/libcurl_imp.lib `
-            -DCURL_LIBRARIES:FILEPATH=C:/external/curl/lib/libcurl_imp.lib `
-            -DOPENSSL_ROOT_DIR=C:/external/openssl `
-            -DFREETYPE_INCLUDE_DIRS:PATH=C:/external/freetype/include/freetype2 `
-            -DFREETYPE_LIBRARY:FILEPATH=C:/external/freetype/lib/freetype.lib `
-            -DPNG_PNG_INCLUDE_DIR:PATH=C:/external/libpng/include `
-            -DPNG_LIBRARY:FILEPATH=C:/external/libpng/lib/libpng16.lib `
-            -DJPEG_INCLUDE_DIR:PATH=C:/external/libjpeg/include `
-            -DJPEG_LIBRARY:FILEPATH=C:/external/libjpeg/lib/jpeg.lib `
-            -DVORBIS_LIBRARY:FILEPATH=C:/external/vorbis/lib/vorbis.lib `
-            -DVORBISFILE_LIBRARY:FILEPATH=C:/external/vorbis/lib/vorbisfile.lib `
-            -DOGG_LIBRARY:FILEPATH=C:/external/ogg/lib/ogg.lib
+          # Use shared cmake-config.ps1 (single source of truth)
+          . "${{ github.workspace }}/scripts/cmake-config.ps1" -DepsPath "C:/external" -NelPath "C:/ryzomcore/build"
+          $cmakeArgs = Get-ClientCMakeArgs
+          cmake .. -G Ninja -DCMAKE_BUILD_TYPE=Release @cmakeArgs
 
       - name: Build Client
         run: cmake --build build-client --parallel 4
@@ -664,7 +660,7 @@ jobs:
         uses: actions/cache/restore@v4
         with:
           path: C:/external
-          key: ryzom-external-2022q2-v15
+          key: ryzom-external-2022q2-v17
           restore-keys: |
             ryzom-external-2022q2-
 
@@ -715,26 +711,10 @@ jobs:
         run: |
           mkdir build-server
           cd build-server
-          # Use Ninja generator for faster builds (consistent with local builds)
-          cmake .. -G Ninja `
-            -DCMAKE_BUILD_TYPE=Release `
-            -DBUILD_CLIENT=OFF `
-            -DBUILD_SERVER=ON `
-            -DNEL_PREFIX_PATH=C:/ryzomcore/build `
-            -DCMAKE_PREFIX_PATH=C:/external `
-            -DLUA_INCLUDE_DIR=C:/external/lua/include `
-            -DLUA_LIBRARIES=C:/external/lua/lib/lua.lib `
-            -DLIBXML2_INCLUDE_DIR=C:/external/libxml2/include/libxml2 `
-            -DLIBXML2_LIBRARY=C:/external/libxml2/lib/libxml2.lib `
-            -DZLIB_ROOT=C:/external/zlib `
-            -DFREETYPE_INCLUDE_DIRS=C:/external/freetype/include/freetype2 `
-            -DFREETYPE_LIBRARY=C:/external/freetype/lib/freetype.lib `
-            -DPNG_PNG_INCLUDE_DIR=C:/external/libpng/include `
-            -DPNG_LIBRARY=C:/external/libpng/lib/libpng16.lib `
-            -DJPEG_INCLUDE_DIR=C:/external/libjpeg/include `
-            -DJPEG_LIBRARY=C:/external/libjpeg/lib/jpeg.lib `
-            -DODE_INCLUDE_DIR=C:/external/ode/include `
-            -DODE_LIBRARY=C:/external/ode/lib/ode_doubles.lib
+          # Use shared cmake-config.ps1 (single source of truth)
+          . "${{ github.workspace }}/scripts/cmake-config.ps1" -DepsPath "C:/external" -NelPath "C:/ryzomcore/build"
+          $cmakeArgs = Get-ServerCMakeArgs
+          cmake .. -G Ninja -DCMAKE_BUILD_TYPE=Release @cmakeArgs
 
       - name: Build Server
         run: cmake --build build-server --parallel 4

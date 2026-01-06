@@ -89,37 +89,13 @@ if exist "%PROJECT_DIR%\ryzomcore\build\lib\nelmisc_r.lib" (
 echo NeL path: %NEL_PATH%
 echo.
 
+REM Get CMake args from shared config (single source of truth)
+echo Getting CMake configuration...
+for /f "delims=" %%a in ('powershell -NoProfile -ExecutionPolicy Bypass -File "%SCRIPT_DIR%cmake-config.ps1" -OutputArgs Client -DepsPath "%DEPS_PATH%" -NelPath "%NEL_PATH%"') do set CMAKE_ARGS=%%a
+
 REM Configure CMake using Ninja generator
 echo Configuring CMake (Client)...
-cmake .. ^
-    -G Ninja ^
-    -DCMAKE_BUILD_TYPE=Release ^
-    -DBUILD_CLIENT=ON ^
-    -DBUILD_SERVER=OFF ^
-    -DWITH_STATIC=ON ^
-    -DWITH_STATIC_CURL=ON ^
-    -DNEL_PREFIX_PATH=%NEL_PATH% ^
-    -DCMAKE_PREFIX_PATH=%DEPS_PATH% ^
-    -DLUA_INCLUDE_DIR:PATH=%DEPS_PATH%/lua/include ^
-    -DLUA_LIBRARIES:FILEPATH=%DEPS_PATH%/lua/lib/lua.lib ^
-    -DLIBXML2_INCLUDE_DIR:PATH=%DEPS_PATH%/libxml2/include/libxml2 ^
-    -DLIBXML2_LIBRARY:FILEPATH=%DEPS_PATH%/libxml2/lib/libxml2.lib ^
-    -DZLIB_ROOT=%DEPS_PATH%/zlib ^
-    -DZLIB_LIBRARY:FILEPATH=%DEPS_PATH%/zlib/lib/zlib.lib ^
-    -DCURL_ROOT=%DEPS_PATH%/curl ^
-    -DCURL_INCLUDE_DIR:PATH=%DEPS_PATH%/curl/include ^
-    -DCURL_LIBRARY:FILEPATH=%DEPS_PATH%/curl/lib/libcurl_imp.lib ^
-    -DCURL_LIBRARIES:FILEPATH=%DEPS_PATH%/curl/lib/libcurl_imp.lib ^
-    -DOPENSSL_ROOT_DIR=%DEPS_PATH%/openssl ^
-    -DFREETYPE_INCLUDE_DIRS:PATH=%DEPS_PATH%/freetype/include/freetype2 ^
-    -DFREETYPE_LIBRARY:FILEPATH=%DEPS_PATH%/freetype/lib/freetype.lib ^
-    -DPNG_PNG_INCLUDE_DIR:PATH=%DEPS_PATH%/libpng/include ^
-    -DPNG_LIBRARY:FILEPATH=%DEPS_PATH%/libpng/lib/libpng16.lib ^
-    -DJPEG_INCLUDE_DIR:PATH=%DEPS_PATH%/libjpeg/include ^
-    -DJPEG_LIBRARY:FILEPATH=%DEPS_PATH%/libjpeg/lib/jpeg.lib ^
-    -DVORBIS_LIBRARY:FILEPATH=%DEPS_PATH%/vorbis/lib/vorbis.lib ^
-    -DVORBISFILE_LIBRARY:FILEPATH=%DEPS_PATH%/vorbis/lib/vorbisfile.lib ^
-    -DOGG_LIBRARY:FILEPATH=%DEPS_PATH%/ogg/lib/ogg.lib
+cmake .. -G Ninja -DCMAKE_BUILD_TYPE=Release %CMAKE_ARGS%
 
 if %ERRORLEVEL% neq 0 (
     echo CMake configuration failed!

@@ -304,7 +304,6 @@ if not exist "%RELEASE_DIR%\data\particle" mkdir "%RELEASE_DIR%\data\particle"
 if not exist "%RELEASE_DIR%\data\misc" mkdir "%RELEASE_DIR%\data\misc"
 if not exist "%RELEASE_DIR%\data\smiley" mkdir "%RELEASE_DIR%\data\smiley"
 if not exist "%RELEASE_DIR%\data\sound" mkdir "%RELEASE_DIR%\data\sound"
-if not exist "%RELEASE_DIR%\data\font" mkdir "%RELEASE_DIR%\data\font"
 if not exist "%RELEASE_DIR%\logs" mkdir "%RELEASE_DIR%\logs"
 echo    + Server directory structure created
 echo.
@@ -326,11 +325,8 @@ if exist "%PROJECT_DIR%\data\texture" (
     echo    + Copied texture files
 )
 
-REM Font files
-if exist "%PROJECT_DIR%\data\font" (
-    xcopy /Y /E /Q "%PROJECT_DIR%\data\font\*" "%RELEASE_DIR%\data\font\" >nul 2>nul
-    echo    + Copied font files
-)
+REM Font files - server doesn't need fonts (no rendering)
+REM Skipping font copy for server
 
 REM Particle files
 if exist "%PROJECT_DIR%\data\particle" (
@@ -370,7 +366,7 @@ echo %STEP%. Copying dependency DLLs...
 
 REM Determine base deps directory (check repo deps/ first, then env var, then legacy path)
 set DEPS_BASE=
-if exist "%PROJECT_DIR%\deps\CMakeLists.txt" (
+if exist "%PROJECT_DIR%\deps\lua\lib\lua.lib" (
     set DEPS_BASE=%PROJECT_DIR%\deps
 ) else if defined TUXDEPS_PATH (
     if exist "%TUXDEPS_PATH%" set DEPS_BASE=%TUXDEPS_PATH%

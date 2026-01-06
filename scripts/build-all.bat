@@ -41,8 +41,8 @@ echo =========================================
 echo   Both builds complete!
 echo =========================================
 echo.
-echo Client: build-client\bin\Release\tux-target.exe
-echo Server: build-server\bin\Release\tux-target-srv.exe
+echo Client: build-client\bin\tux-target.exe
+echo Server: build-server\bin\tux-target-srv.exe
 echo.
 echo Run scripts:
 echo   scripts\run-client.bat

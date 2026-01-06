@@ -1,18 +1,24 @@
 #
 # Tux Target CMake Configuration
 #
-# Shared CMake variable definitions for both local builds and CI.
+# Single source of truth for CMake variables used by both local builds and CI.
 # This ensures consistent paths between environments.
 #
-# Usage:
+# Usage (PowerShell):
 #   . .\scripts\cmake-config.ps1
-#   $cmakeArgs = Get-ClientCMakeArgs
-#   cmake .. @cmakeArgs
+#   $args = Get-ClientCMakeArgs -Deps "C:/external" -Nel "C:/ryzomcore/build"
+#   cmake .. -G Ninja @args
+#
+# Usage (from batch file):
+#   for /f "delims=" %%a in ('powershell -File scripts\cmake-config.ps1 -OutputArgs Client -DepsPath "%DEPS_PATH%" -NelPath "%NEL_PATH%"') do set CMAKE_ARGS=%%a
+#   cmake .. %CMAKE_ARGS%
 #
 
 param(
     [string]$DepsPath = $null,
-    [string]$NelPath = $null
+    [string]$NelPath = $null,
+    [ValidateSet("", "Client", "Server")]
+    [string]$OutputArgs = ""
 )
 
 # Load manifest for path defaults
@@ -24,7 +30,7 @@ if (!$DepsPath) {
     $DepsPath = Get-DepsPath
 }
 if (!$NelPath) {
-    $NelPath = if ($env:NEL_PREFIX_PATH) { $env:NEL_PREFIX_PATH } else { "C:/ryzomcore/build" }
+    $NelPath = if ($env:NEL_PREFIX_PATH) { $env:NEL_PREFIX_PATH } else { Join-Path (Get-RepoRoot) "ryzomcore/build" }
 }
 
 # Normalize paths (forward slashes for CMake)
@@ -32,7 +38,7 @@ $DepsPath = $DepsPath -replace '\\', '/'
 $NelPath = $NelPath -replace '\\', '/'
 
 function Get-CommonCMakeArgs {
-    param([string]$Deps = $DepsPath, [string]$Nel = $NelPath)
+    param([string]$Deps = $script:DepsPath, [string]$Nel = $script:NelPath)
 
     return @(
         "-DNEL_PREFIX_PATH=$Nel",
@@ -53,7 +59,7 @@ function Get-CommonCMakeArgs {
 }
 
 function Get-ClientCMakeArgs {
-    param([string]$Deps = $DepsPath, [string]$Nel = $NelPath)
+    param([string]$Deps = $script:DepsPath, [string]$Nel = $script:NelPath)
 
     $common = Get-CommonCMakeArgs -Deps $Deps -Nel $Nel
     $client = @(
@@ -75,7 +81,7 @@ function Get-ClientCMakeArgs {
 }
 
 function Get-ServerCMakeArgs {
-    param([string]$Deps = $DepsPath, [string]$Nel = $NelPath)
+    param([string]$Deps = $script:DepsPath, [string]$Nel = $script:NelPath)
 
     $common = Get-CommonCMakeArgs -Deps $Deps -Nel $Nel
     $server = @(
@@ -88,17 +94,31 @@ function Get-ServerCMakeArgs {
     return $common + $server
 }
 
-function Write-CMakeArgsToFile {
+# Convert args array to single-line string for batch file consumption
+function Get-CMakeArgsString {
     param(
-        [string]$OutputFile,
-        [string[]]$Args
+        [ValidateSet("Client", "Server")]
+        [string]$BuildType,
+        [string]$Deps = $script:DepsPath,
+        [string]$Nel = $script:NelPath
     )
 
-    $Args | ForEach-Object { $_ } | Out-File -FilePath $OutputFile -Encoding UTF8
-    Write-Host "CMake args written to: $OutputFile"
+    if ($BuildType -eq "Client") {
+        $args = Get-ClientCMakeArgs -Deps $Deps -Nel $Nel
+    } else {
+        $args = Get-ServerCMakeArgs -Deps $Deps -Nel $Nel
+    }
+
+    return ($args -join " ")
 }
 
-# Print configuration when run directly
+# If -OutputArgs is specified, print args string and exit (for batch file use)
+if ($OutputArgs) {
+    Get-CMakeArgsString -BuildType $OutputArgs -Deps $DepsPath -Nel $NelPath
+    exit 0
+}
+
+# Print configuration when run directly without -OutputArgs
 if ($MyInvocation.InvocationName -ne '.') {
     Write-Host "Tux Target CMake Configuration"
     Write-Host "==============================="
@@ -113,5 +133,9 @@ if ($MyInvocation.InvocationName -ne '.') {
     Get-ServerCMakeArgs | ForEach-Object { Write-Host "  $_" }
 }
 
-# Export functions
-Export-ModuleMember -Function Get-CommonCMakeArgs, Get-ClientCMakeArgs, Get-ServerCMakeArgs, Write-CMakeArgsToFile -ErrorAction SilentlyContinue
+# Export functions (for module use)
+try {
+    Export-ModuleMember -Function Get-CommonCMakeArgs, Get-ClientCMakeArgs, Get-ServerCMakeArgs, Get-CMakeArgsString -ErrorAction SilentlyContinue
+} catch {
+    # Expected when dot-sourced
+}

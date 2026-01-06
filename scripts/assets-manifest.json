@@ -5,13 +5,14 @@
   "lastUpdated": "2026-01-05",
 
   "directories": {
+    "comment": "Font files come from RyzomCore samples, not data/ directory",
     "client": {
-      "required": ["texture", "shape", "font", "sound", "level"],
+      "required": ["texture", "shape", "sound", "level"],
       "optional": ["gui", "particle", "misc", "smiley"]
     },
     "server": {
       "required": ["level", "lua", "module", "shape"],
-      "optional": ["texture", "font", "particle", "misc", "smiley", "sound"]
+      "optional": ["texture", "particle", "misc", "smiley", "sound"]
     }
   },
 
@@ -37,9 +38,6 @@
         "entity_pingoo_open.shape",
         "entity_sphere_close.shape",
         "entity_sphere_open.shape"
-      ],
-      "font": [
-        "cyberbit.ttf"
       ]
     },
     "server": {

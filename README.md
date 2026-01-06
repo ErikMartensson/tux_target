@@ -181,7 +181,7 @@ For detailed build instructions and troubleshooting, see **[docs/BUILDING.md](do
 | [**LEVELS.md**](docs/LEVELS.md) | Level list and chat commands for voting/forcing maps |
 | [**MODIFICATIONS.md**](docs/MODIFICATIONS.md) | Source code changes for modern compatibility |
 | [**PROTOCOL_NOTES.md**](docs/PROTOCOL_NOTES.md) | NeL network protocol technical reference |
-| [**scripts/post-build.sh**](scripts/post-build.sh) | Automated post-build file copy script |
+| [**scripts/post-build.bat**](scripts/post-build.bat) | Automated post-build file copy script |
 | [**docs/archive/**](docs/archive/) | Historical development notes (reference only) |
 
 ---

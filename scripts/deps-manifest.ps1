@@ -83,6 +83,26 @@ $script:ServerLibs = @(
     "ode/lib/ode_doubles.lib"
 )
 
+# Libraries NOT needed by Tux Target (can be removed to save ~3.4GB)
+# These are part of the Ryzom external package but unused by this project
+$script:UnusedLibraries = @(
+    "assimp",           # 3D model importer (25MB)
+    "cegui",            # GUI library (47MB)
+    "ffmpeg",           # Video encoding (120MB)
+    "gl",               # OpenGL headers (1.3MB) - come with Windows SDK
+    "gles",             # OpenGL ES (680KB)
+    "mariadb-connector-c",  # Database (1.7MB)
+    "msquic",           # QUIC protocol (528KB)
+    "protobuf",         # Protocol buffers (240MB)
+    "python310",        # Python (109MB)
+    "qt5",              # Qt5 (634MB)
+    "qt5_static",       # Qt5 static (621MB)
+    "qt6",              # Qt6 (904MB)
+    "qt6_static",       # Qt6 static (724MB)
+    "squish",           # Texture compression (564KB)
+    "tinycc"            # Tiny C compiler (2.1MB)
+)
+
 $script:ServerHeaders = @(
     "ode/include/ode/ode.h"
 )
@@ -101,6 +121,7 @@ function Get-RequiredHeaders { return $script:RequiredHeaders }
 function Get-ServerLibs { return $script:ServerLibs }
 function Get-ServerHeaders { return $script:ServerHeaders }
 function Get-ClientDLLs { return $script:ClientDLLs }
+function Get-UnusedLibraries { return $script:UnusedLibraries }
 
 function Get-AllRequiredFiles {
     return $script:RequiredLibs + $script:RequiredDLLs + $script:RequiredHeaders
@@ -146,7 +167,7 @@ function Test-DepsInstalled {
 
 # Export functions if used as module (only works when imported as module, not dot-sourced)
 try {
-    Export-ModuleMember -Function Get-DepsPath, Get-RepoRoot, Get-RequiredLibs, Get-RequiredDLLs, Get-RequiredHeaders, Get-ServerLibs, Get-ServerHeaders, Get-ClientDLLs, Get-AllRequiredFiles, Test-DepsInstalled
+    Export-ModuleMember -Function Get-DepsPath, Get-RepoRoot, Get-RequiredLibs, Get-RequiredDLLs, Get-RequiredHeaders, Get-ServerLibs, Get-ServerHeaders, Get-ClientDLLs, Get-UnusedLibraries, Get-AllRequiredFiles, Test-DepsInstalled
 } catch {
     # Silently ignore - this is expected when dot-sourced instead of imported as module
 }

@@ -97,29 +97,13 @@ if exist "%PROJECT_DIR%\ryzomcore\build\lib\nelmisc_r.lib" (
 echo NeL path: %NEL_PATH%
 echo.
 
+REM Get CMake args from shared config (single source of truth)
+echo Getting CMake configuration...
+for /f "delims=" %%a in ('powershell -NoProfile -ExecutionPolicy Bypass -File "%SCRIPT_DIR%cmake-config.ps1" -OutputArgs Server -DepsPath "%DEPS_PATH%" -NelPath "%NEL_PATH%"') do set CMAKE_ARGS=%%a
+
 REM Configure CMake using Ninja generator
 echo Configuring CMake (Server)...
-cmake .. ^
-    -G Ninja ^
-    -DCMAKE_BUILD_TYPE=Release ^
-    -DBUILD_CLIENT=OFF ^
-    -DBUILD_SERVER=ON ^
-    -DNEL_PREFIX_PATH=%NEL_PATH% ^
-    -DCMAKE_PREFIX_PATH=%DEPS_PATH% ^
-    -DLUA_INCLUDE_DIR:PATH=%DEPS_PATH%/lua/include ^
-    -DLUA_LIBRARIES:FILEPATH=%DEPS_PATH%/lua/lib/lua.lib ^
-    -DLIBXML2_INCLUDE_DIR:PATH=%DEPS_PATH%/libxml2/include/libxml2 ^
-    -DLIBXML2_LIBRARY:FILEPATH=%DEPS_PATH%/libxml2/lib/libxml2.lib ^
-    -DZLIB_ROOT=%DEPS_PATH%/zlib ^
-    -DZLIB_LIBRARY:FILEPATH=%DEPS_PATH%/zlib/lib/zlib.lib ^
-    -DFREETYPE_INCLUDE_DIRS:PATH=%DEPS_PATH%/freetype/include/freetype2 ^
-    -DFREETYPE_LIBRARY:FILEPATH=%DEPS_PATH%/freetype/lib/freetype.lib ^
-    -DPNG_PNG_INCLUDE_DIR:PATH=%DEPS_PATH%/libpng/include ^
-    -DPNG_LIBRARY:FILEPATH=%DEPS_PATH%/libpng/lib/libpng16.lib ^
-    -DJPEG_INCLUDE_DIR:PATH=%DEPS_PATH%/libjpeg/include ^
-    -DJPEG_LIBRARY:FILEPATH=%DEPS_PATH%/libjpeg/lib/jpeg.lib ^
-    -DODE_INCLUDE_DIR=%DEPS_PATH%/ode/include ^
-    -DODE_LIBRARY=%DEPS_PATH%/ode/lib/ode_doubles.lib
+cmake .. -G Ninja -DCMAKE_BUILD_TYPE=Release %CMAKE_ARGS%
 
 if %ERRORLEVEL% neq 0 (
     echo CMake configuration failed!

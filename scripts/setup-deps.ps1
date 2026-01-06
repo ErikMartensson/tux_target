@@ -209,14 +209,37 @@ if (!$SkipCleanup) {
     $beforeSize = (Get-ChildItem $DepsPath -Recurse | Measure-Object -Property Length -Sum).Sum / 1MB
     Write-Host "Size before cleanup: $([math]::Round($beforeSize, 2)) MB"
 
+    # Remove unused library directories (saves ~3.4GB)
+    Write-Host "`nRemoving unused libraries..."
+    $unusedLibs = Get-UnusedLibraries
+    foreach ($lib in $unusedLibs) {
+        $libPath = Join-Path $DepsPath $lib
+        if (Test-Path $libPath) {
+            $libSize = (Get-ChildItem $libPath -Recurse | Measure-Object -Property Length -Sum).Sum / 1MB
+            Remove-Item $libPath -Recurse -Force -ErrorAction SilentlyContinue
+            Write-Host "  Removed: $lib ($([math]::Round($libSize, 1)) MB)"
+        }
+    }
+
     # Remove debug symbols
+    Write-Host "`nRemoving debug symbols..."
     Get-ChildItem $DepsPath -Recurse -Filter "*.pdb" -ErrorAction SilentlyContinue |
         Remove-Item -Force -ErrorAction SilentlyContinue
 
     # Remove docs, samples, tests
+    Write-Host "Removing docs, samples, tests..."
     Get-ChildItem $DepsPath -Recurse -Directory -ErrorAction SilentlyContinue |
         Where-Object { $_.Name -match "^(doc|docs|sample|samples|test|tests|example|examples)$" } |
         Remove-Item -Recurse -Force -ErrorAction SilentlyContinue
+
+    # Remove boost debug libraries (saves ~500MB)
+    Write-Host "Removing boost debug libraries..."
+    $boostDebugLibs = Get-ChildItem "$DepsPath/boost/lib" -Filter "*-gd-*.lib" -ErrorAction SilentlyContinue
+    if ($boostDebugLibs) {
+        $boostDebugSize = ($boostDebugLibs | Measure-Object -Property Length -Sum).Sum / 1MB
+        $boostDebugLibs | Remove-Item -Force -ErrorAction SilentlyContinue
+        Write-Host "  Removed $($boostDebugLibs.Count) boost debug libs ($([math]::Round($boostDebugSize, 1)) MB)"
+    }
 
     # Remove known debug libraries explicitly (don't use pattern matching to avoid false positives like luabind.lib)
     $debugLibsToRemove = @(
@@ -243,7 +266,7 @@ if (!$SkipCleanup) {
         Remove-Item -Force -ErrorAction SilentlyContinue
 
     $afterSize = (Get-ChildItem $DepsPath -Recurse | Measure-Object -Property Length -Sum).Sum / 1MB
-    Write-Host "Size after cleanup: $([math]::Round($afterSize, 2)) MB"
+    Write-Host "`nSize after cleanup: $([math]::Round($afterSize, 2)) MB"
     Write-Host "Saved: $([math]::Round($beforeSize - $afterSize, 2)) MB" -ForegroundColor Green
     Write-Host ""
 }
