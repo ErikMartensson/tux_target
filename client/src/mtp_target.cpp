@@ -49,6 +49,8 @@
 #include "hud_task.h"
 #include "time_task.h"
 #include "game_task.h"
+#include "chat_task.h"
+#include "score_task.h"
 #include "mtp_target.h"
 #include "intro_task.h"
 #include "editor_task.h"
@@ -174,7 +176,17 @@ void CMtpTarget::_error()
 {
 	nlinfo("error occurred : stop all and reset");
 	reset();
-	CGameTask::instance().stop();
+	// Clear all entities so they can be re-added when reconnecting
+	CEntityManager::getInstance().removeAll();
+	// Immediately remove CGameTask and its child tasks from the task manager
+	// so they can be added again when reconnecting
+	nlinfo("Removing CGameTask and child tasks from task manager");
+	CTaskManager::getInstance().remove(CLevelManager::instance());
+	CTaskManager::getInstance().remove(CHudTask::instance());
+	CTaskManager::getInstance().remove(CScoreTask::instance());
+	CTaskManager::getInstance().remove(CChatTask::instance());
+	CTaskManager::getInstance().remove(CGameTask::instance());
+	nlinfo("CGameTask and child tasks removed");
 	CEditorTask::instance().stop();
 	CEditorTask::instance().enable(false);
 	CBackgroundTask::instance().restart();
@@ -183,6 +195,7 @@ void CMtpTarget::_error()
 	CIntroTask::instance().restart();
 	CLevelManager::instance().release();
 	DoError = false;
+	Error = false;  // Reset error flag so reconnection can work
 }
 
 void CMtpTarget::update()

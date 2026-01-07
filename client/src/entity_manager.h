@@ -89,6 +89,7 @@ public:
 
 	void	add(uint8 eid, const std::string &name, sint32 totalScore, NLMISC::CRGBA &color, const std::string &texture, bool spectator, bool isLocal, const std::string &trace, const std::string &meshName);
 	void	remove(uint8 eid);
+	void	removeAll();
 
 	bool	exist(uint8 eid) ;
 

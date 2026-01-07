@@ -281,4 +281,10 @@ void CNetworkTask::setEditMode(uint8 editMode)
 
 void CNetworkTask::stop()
 {
+	if (Sock.connected())
+	{
+		// Clear disconnect callback first to prevent "Server lost !" message
+		Sock.setDisconnectionCallback(NULL, NULL);
+		Sock.disconnect();
+	}
 }

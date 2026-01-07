@@ -11,23 +11,19 @@
 				<element>
 					<object class="CGuiText" name="text">
 						<alignment>eAlignExpandHorizontal|eAlignExpandVertical</alignment>
-						<string>Can't connect to TCP server : </string>
+						<string>Disconnected from server:</string>
 					</object>
 					<object class="CGuiText" name="errorServerReason">
-						<!-- <alignment>eAlignExpandHorizontal|eAlignExpandVertical</alignment> -->
-						<string>file.tga</string>
+						<string></string>
 					</object>
-					
-					<!--
-					<object class="CGuiButton" name="retry">
+					<object class="CGuiButton" name="errorOkButton">
 						<minSize>80,0</minSize>
 						<element>
-							<object class="CGuiText" name="txtCancel">
-								<string>Retry</string>
+							<object class="CGuiText" name="txtOk">
+								<string>OK</string>
 							</object>
 						</element>
-					</object> 
-					-->
+					</object>
 				</element>
 			</object>
 		</element>

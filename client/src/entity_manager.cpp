@@ -118,8 +118,21 @@ void CEntityManager::remove(uint8 eid)
 	nlassert(exist(eid));
 	if(CMtpTarget::getInstance().controler().Camera.getFollowedEntity() == eid)
 		CMtpTarget::getInstance().controler().Camera.setFollowedEntity(255);
-	
+
 	entities()[eid]->reset();
+}
+
+void CEntityManager::removeAll()
+{
+	nlinfo("CEntityManager::removeAll()");
+	CMtpTarget::getInstance().controler().Camera.setFollowedEntity(255);
+	for(uint i = 0; i < 255; i++)
+	{
+		if(entities()[i]->Type != CEntity::Unknown)
+		{
+			entities()[i]->reset();
+		}
+	}
 }
 
 bool CEntityManager::exist(uint8 eid)
