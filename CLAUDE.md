@@ -155,19 +155,62 @@ LevelPlaylist = { };                   # Empty = normal rotation
 
 ## Debug / Logs
 
-**Server log:** `build-server/bin/mtp_target_service.log`
+### Log File Locations
 
-Watch in real-time:
+| Component | Running Directly | After Exit (via run script) |
+|-----------|------------------|----------------------------|
+| **Client** | `build-client/bin/log.log` | `build-client/bin/logs/log.log` |
+| **Server** | `build-server/bin/mtp_target_service.log` | `build-server/bin/logs/mtp_target_service.log` |
+
+**Log rotation behavior:**
+- When running executables directly, logs accumulate in `build-*/bin/log.log`
+- When using `scripts/run-client.bat` or `scripts/run-server.bat`:
+  - Logs are written to the same path while the game is running
+  - On exit/crash, logs are moved to `build-*/bin/logs/` directory
+  - Previous logs are rotated (`.log` → `.log.1` → `.log.2`, etc., up to 5 files)
+
+**Watch logs in real-time:**
 ```bash
-tail -f build-server/bin/mtp_target_service.log
+tail -f build-server/bin/mtp_target_service.log  # Server
+tail -f build-client/bin/log.log                  # Client
 ```
-
-**Client log:** Check console output or `build-client/bin/` for any `.log` files.
 
 **Common log patterns:**
 - `Loading level: level_name` - Level loading started
 - `Lua error:` - Script problems
 - `Module score:` - Scoring events (if debug enabled)
+
+### Debug/Developer Keys
+
+Client debug keys defined in `client/src/controler.cpp`:
+
+| Key | Action | Status |
+|-----|--------|--------|
+| ESC | Open pause menu | Works |
+| F1 | Toggle level view | Works |
+| F3 | Cycle polygon mode (solid/wireframe/points) | Works |
+| F7 | Toggle free look camera mode | Works |
+| F8 | Release/capture mouse cursor | Works |
+| F9 | View previous entity | Works |
+| F10 | View next entity | Works |
+| F11 | Reset followed entity | Works |
+| F12 | Print camera position to log | Works |
+| Alt+A | Toggle external camera | Works |
+| Alt+F2 | Take screenshot | Works |
+| Ctrl+F5 | Force end session (`/forceend`) | Works |
+| Ctrl+F6 | Reset session (`/reset`) | Buggy (acts like /forceend) |
+| F5 | Add bot | DISABLED (crash) |
+| F6 | Kick bot | DISABLED (crash) |
+| Shift+F1 | Toggle start positions display | Non-functional |
+| F4 | Toggle editor mode | Non-functional |
+| Ctrl+F4 | Toggle debug display | Non-functional |
+
+### Network Latency Investigation
+
+If investigating high ping or input delay, check these files:
+- `server/src/network.cpp:142` - Network update rate (changed 40ms → 20ms)
+- `client/src/interpolator.cpp` - Client-side position smoothing
+- Look for sleep/wait calls in network loops
 
 ## Level File Format
 
@@ -215,6 +258,24 @@ The `reference/mtp-target-v1.5.19/` directory contains the last official release
 | Doc | Contents |
 |-----|----------|
 | [docs/BUILDING.md](docs/BUILDING.md) | Build prerequisites and steps |
+| [docs/CHANGELOG.md](docs/CHANGELOG.md) | All improvements from original v1.2.2a |
 | [docs/KNOWN_ISSUES.md](docs/KNOWN_ISSUES.md) | Issue tracker with priorities |
 | [docs/LEVELS.md](docs/LEVELS.md) | Level list, scoring mechanics, chat commands |
+| [docs/MODIFICATIONS.md](docs/MODIFICATIONS.md) | Source code changes for modern compatibility |
 | [docs/RUNTIME_FIXES.md](docs/RUNTIME_FIXES.md) | Runtime issue solutions |
+
+## Finalizing Tasks
+
+Before creating commits for completed features or fixes, update documentation:
+
+- [ ] **docs/CHANGELOG.md** - Add new features, improvements, or fixes
+- [ ] **docs/MODIFICATIONS.md** - Document source code changes (if applicable)
+- [ ] **docs/KNOWN_ISSUES.md** - Mark fixed issues as completed, add new issues discovered
+- [ ] **docs/RUNTIME_FIXES.md** - Add runtime solutions (if applicable)
+- [ ] **README.md** - Update status, features, or known issues sections (if significant)
+
+**Typical updates:**
+- New feature → CHANGELOG.md + README.md (if user-facing)
+- Bug fix → CHANGELOG.md + KNOWN_ISSUES.md (mark completed)
+- Code modernization → MODIFICATIONS.md
+- Runtime crash fix → RUNTIME_FIXES.md + KNOWN_ISSUES.md
