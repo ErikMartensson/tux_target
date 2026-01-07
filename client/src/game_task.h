@@ -31,13 +31,15 @@
 // Includes
 //
 #include "gui.h"
+#include "gui_scale.h"
+#include "options_menu.h"
 
 
 //
 // Classes
 //
 
-class CGameTask : public NLMISC::CSingleton<CGameTask>, public ITask
+class CGameTask : public NLMISC::CSingleton<CGameTask>, public ITask, public IOptionsMenuCallback
 {
 public:
 
@@ -47,11 +49,28 @@ public:
 	virtual void release();
 
 	virtual void stop();
-	
+
 	virtual std::string name() const { return "CGameTask"; }
-	
+
+	// Pause menu
+	void togglePauseMenu();
+	bool isPaused() const { return _pauseMenuActive; }
+
+	// IOptionsMenuCallback implementation
+	virtual void onOptionsBack();
+	virtual void onOptionsApply();
+
 private:
 	guiSPG<CGuiCustom> customGui;
+
+	// Pause menu state
+	bool _pauseMenuActive;
+	bool _pauseMenuLoaded;
+	guiSPG<CGuiFrame> _pauseFrame;
+	guiSPG<CGuiButton> _resumeButton;
+	guiSPG<CGuiButton> _optionsButton;
+	guiSPG<CGuiButton> _disconnectButton;
+	guiSPG<CGuiButton> _quitButton;
 
 };
 

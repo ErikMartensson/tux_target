@@ -1,0 +1,71 @@
+<?xml version="1.0" standalone="no" ?>
+<!-- this is a mtp-target gui resource -->
+<resource>
+	<object class="CGuiFrame" name="pauseFrame">
+		<alignment>eAlignCenterHorizontal|eAlignCenterVertical</alignment>
+		<minSize>200,220</minSize>
+		<position>0,0</position>
+		<element>
+			<object class="CGuiVBox" name="pauseVbox">
+				<alignment>eAlignExpandHorizontal|eAlignExpandVertical</alignment>
+				<element>
+					<object class="CGuiText" name="pauseTitle">
+						<alignment>eAlignCenterHorizontal|eAlignCenterVertical</alignment>
+						<string> PAUSED </string>
+					</object>
+					<object class="CGuiSpacer" name="spacerTop">
+						<minSize>0,15</minSize>
+					</object>
+					<object class="CGuiButton" name="bResume">
+						<alignment>eAlignCenterHorizontal|eAlignCenterVertical</alignment>
+						<minSize>150,0</minSize>
+						<element>
+							<object class="CGuiText" name="txtResume">
+								<string>Resume</string>
+							</object>
+						</element>
+					</object>
+					<object class="CGuiSpacer" name="spacer1">
+						<minSize>0,5</minSize>
+					</object>
+					<object class="CGuiButton" name="bOptions">
+						<alignment>eAlignCenterHorizontal|eAlignCenterVertical</alignment>
+						<minSize>150,0</minSize>
+						<element>
+							<object class="CGuiText" name="txtOptions">
+								<string>Options</string>
+							</object>
+						</element>
+					</object>
+					<object class="CGuiSpacer" name="spacer2">
+						<minSize>0,5</minSize>
+					</object>
+					<object class="CGuiButton" name="bDisconnect">
+						<alignment>eAlignCenterHorizontal|eAlignCenterVertical</alignment>
+						<minSize>150,0</minSize>
+						<element>
+							<object class="CGuiText" name="txtDisconnect">
+								<string>Disconnect</string>
+							</object>
+						</element>
+					</object>
+					<object class="CGuiSpacer" name="spacer3">
+						<minSize>0,5</minSize>
+					</object>
+					<object class="CGuiButton" name="bQuit">
+						<alignment>eAlignCenterHorizontal|eAlignCenterVertical</alignment>
+						<minSize>150,0</minSize>
+						<element>
+							<object class="CGuiText" name="txtQuit">
+								<string>Quit Game</string>
+							</object>
+						</element>
+					</object>
+					<object class="CGuiSpacer" name="spacerBottom">
+						<minSize>0,10</minSize>
+					</object>
+				</element>
+			</object>
+		</element>
+	</object>
+</resource>

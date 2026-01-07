@@ -34,6 +34,8 @@
 #include "mtp_target.h"
 #include "font_manager.h"
 #include "task_manager.h"
+#include "network_task.h"
+#include "sound_manager.h"
 #include "entity_manager.h"
 #include "background_task.h"
 #include "level_manager.h"
@@ -72,12 +74,57 @@ void CGameTask::init()
 	if(!tocFound && CConfigFileTask::getInstance().configFile().getVar("CaptureMouse").asInt() == 1)
 		C3DTask::getInstance().captureCursor(true);
 
-	
-
+	// Initialize pause menu state
+	_pauseMenuActive = false;
+	_pauseMenuLoaded = false;
 }
 
 void CGameTask::update()
 {
+	// Handle options menu if active
+	if(COptionsMenu::getInstance().isActive())
+	{
+		COptionsMenu::getInstance().update();
+		return;
+	}
+
+	// Handle pause menu if active
+	if(_pauseMenuActive)
+	{
+		// Handle Resume button
+		if(_resumeButton->pressed())
+		{
+			togglePauseMenu();
+			return;
+		}
+
+		// Handle Options button - show options menu
+		if(_optionsButton->pressed())
+		{
+			COptionsMenu::getInstance().show(this);
+			return;
+		}
+
+		// Handle Disconnect button - return to main menu
+		if(_disconnectButton->pressed())
+		{
+			// Hide pause menu
+			CGuiObjectManager::getInstance().objects.clear();
+			_pauseMenuActive = false;
+
+			// Use the existing error handling to properly disconnect and return to menu
+			// This triggers a clean shutdown and restart of the intro task
+			CMtpTarget::getInstance().error(string("Disconnected."));
+			return;
+		}
+
+		// Handle Quit button - exit game entirely
+		if(_quitButton->pressed())
+		{
+			CTaskManager::getInstance().exit();
+			return;
+		}
+	}
 }
 
 void CGameTask::render()
@@ -96,5 +143,64 @@ void CGameTask::stop()
 	CHudTask::getInstance().stop();
 	CScoreTask::getInstance().stop();
 	CChatTask::getInstance().stop();
+
+	// Clear pause/options menu state
+	if(_pauseMenuActive || COptionsMenu::getInstance().isActive())
+	{
+		CGuiObjectManager::getInstance().objects.clear();
+		_pauseMenuActive = false;
+		COptionsMenu::getInstance().hide();
+	}
+}
+
+void CGameTask::togglePauseMenu()
+{
+	// If options menu is active, close it and return to pause menu
+	if(COptionsMenu::getInstance().isActive())
+	{
+		COptionsMenu::getInstance().hide();
+		CGuiObjectManager::getInstance().objects.clear();
+		CGuiObjectManager::getInstance().objects.push_back(_pauseFrame);
+		return;
+	}
+
+	// Load pause menu XML on first use
+	if(!_pauseMenuLoaded)
+	{
+		guiSPG<CGuiXml> xml = CGuiXmlManager::getInstance().Load("pause_menu.xml");
+		_pauseFrame = (CGuiFrame *)xml->get("pauseFrame");
+		_resumeButton = (CGuiButton *)xml->get("bResume");
+		_optionsButton = (CGuiButton *)xml->get("bOptions");
+		_disconnectButton = (CGuiButton *)xml->get("bDisconnect");
+		_quitButton = (CGuiButton *)xml->get("bQuit");
+		_pauseMenuLoaded = true;
+	}
+
+	if(_pauseMenuActive)
+	{
+		// Hide pause menu
+		CGuiObjectManager::getInstance().objects.clear();
+		_pauseMenuActive = false;
+	}
+	else
+	{
+		// Show pause menu
+		CGuiObjectManager::getInstance().objects.push_back(_pauseFrame);
+		_pauseMenuActive = true;
+	}
+}
+
+void CGameTask::onOptionsBack()
+{
+	// Return to pause menu
+	CGuiObjectManager::getInstance().objects.clear();
+	CGuiObjectManager::getInstance().objects.push_back(_pauseFrame);
+}
+
+void CGameTask::onOptionsApply()
+{
+	// From the pause menu, just save settings - don't restart
+	// User will need to restart manually (which would disconnect them anyway)
+	nlinfo("Video settings saved. Changes will take effect on next restart.");
 }
 

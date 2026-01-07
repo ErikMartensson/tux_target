@@ -32,6 +32,8 @@
 //
 
 #include "gui.h"
+#include "gui_scale.h"
+#include "options_menu.h"
 #include <nel/3d/u_driver.h>
 #include <vector>
 
@@ -40,7 +42,7 @@
 // Classes
 //
 
-class CIntroTask : public NLMISC::CSingleton<CIntroTask>, public ITask
+class CIntroTask : public NLMISC::CSingleton<CIntroTask>, public ITask, public IOptionsMenuCallback
 {
 public:
 
@@ -59,10 +61,12 @@ public:
 	void updateServerList();
 	void updateConnectionOnLine();
 	void updateConnectionOnLan();
-	void updateOptions();
-	void populateResolutions();
 
 	virtual std::string name() const { return "CIntroTask"; }
+
+	// IOptionsMenuCallback implementation
+	virtual void onOptionsBack();
+	virtual void onOptionsApply();
 		
 	void doConnectionOnLine(uint32 serverId);
 	void doConnectionOnLan();
@@ -104,27 +108,11 @@ private:
 	
 	std::string		Text1, Text2, Error1, Error2;
 	guiSPG<CGuiFrame> _errorServerFrame;
+	guiSPG<CGuiButton> _errorOkButton;
 	uint32 _autoLogin;
 
-	// Options menu
-	guiSPG<CGuiFrame> optionsFrame;
+	// Options button in main menu
 	guiSPG<CGuiButton> optionsButton;
-	guiSPG<CGuiButton> resolutionButton;
-	guiSPG<CGuiText> resolutionText;
-	guiSPG<CGuiButton> fullscreenButton;
-	guiSPG<CGuiButton> vsyncButton;
-	guiSPG<CGuiButton> applyButton;
-	guiSPG<CGuiButton> optionsBackButton;
-	guiSPG<CGuiText> fullscreenText;
-	guiSPG<CGuiText> vsyncText;
-	std::vector<std::pair<int, int>> uniqueResolutions;  // Width, Height pairs
-	bool pendingFullscreen;
-	bool pendingVSync;
-	int selectedResolutionIndex;
-	// Original settings to detect changes
-	int originalResolutionIndex;
-	bool originalFullscreen;
-	bool originalVSync;
 
 };
 

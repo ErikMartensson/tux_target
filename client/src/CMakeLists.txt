@@ -71,6 +71,8 @@ SOURCE_GROUP(Tasks FILES		3d_task.cpp
 								intro_task.h
 								lens_flare_task.cpp
 								lens_flare_task.h
+								options_menu.cpp
+								options_menu.h
 								resource_manager.cpp
 								resource_manager.h
 								resource_manager2.cpp

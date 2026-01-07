@@ -30,6 +30,7 @@
 #include "time_task.h"
 #include "controler.h"
 #include "mtp_target.h"
+#include "game_task.h"
 #include "network_task.h"
 #include "level_manager.h"
 #include "entity_manager.h"
@@ -244,8 +245,7 @@ void CControler::update()
 		}
 		
 		if (C3DTask::getInstance().kbPressed(KeyESCAPE))
-			CTaskManager::getInstance().exit();
-			//exit(0);
+			CGameTask::getInstance().togglePauseMenu();
 
 		if (C3DTask::getInstance().kbPressed(KeyF1))
 		{

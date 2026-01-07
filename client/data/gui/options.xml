@@ -3,7 +3,7 @@
 <resource>
 	<object class="CGuiFrame" name="optionsFrame">
 		<alignment>eAlignCenterHorizontal|eAlignCenterVertical</alignment>
-		<minSize>250,180</minSize>
+		<minSize>280,280</minSize>
 		<position>0,50</position>
 		<element>
 			<object class="CGuiVBox" name="optionsVbox0">
@@ -12,6 +12,11 @@
 					<object class="CGuiText" name="optionsTitle">
 						<alignment>eAlignCenterHorizontal|eAlignCenterVertical</alignment>
 						<string> Video Options </string>
+					</object>
+					<object class="CGuiText" name="videoRestartNote">
+						<alignment>eAlignCenterHorizontal|eAlignCenterVertical</alignment>
+						<color>180,180,180,255</color>
+						<string>(requires restart)</string>
 					</object>
 					<object class="CGuiSpacer" name="spacer1">
 						<minSize>0,5</minSize>
@@ -64,6 +69,52 @@
 										<string>OFF</string>
 									</object>
 								</element>
+							</object>
+						</element>
+					</object>
+					<object class="CGuiSpacer" name="spacer2">
+						<minSize>0,10</minSize>
+					</object>
+					<object class="CGuiText" name="audioTitle">
+						<alignment>eAlignCenterHorizontal|eAlignCenterVertical</alignment>
+						<string> Audio Options </string>
+					</object>
+					<object class="CGuiSpacer" name="spacer2b">
+						<minSize>0,5</minSize>
+					</object>
+					<object class="CGuiHBox" name="musicVolumeBox">
+						<alignment>eAlignExpandHorizontal|eAlignCenterVertical</alignment>
+						<element>
+							<object class="CGuiText" name="musicVolumeLabel">
+								<alignment>eAlignLeft|eAlignCenterVertical</alignment>
+								<string>Music: </string>
+							</object>
+							<object class="CGuiHScale" name="sMusicVolume">
+								<alignment>eAlignExpandHorizontal|eAlignCenterVertical</alignment>
+								<minSize>120,20</minSize>
+							</object>
+							<object class="CGuiText" name="txtMusicVolume">
+								<alignment>eAlignRight|eAlignCenterVertical</alignment>
+								<minSize>40,0</minSize>
+								<string>50%</string>
+							</object>
+						</element>
+					</object>
+					<object class="CGuiHBox" name="soundVolumeBox">
+						<alignment>eAlignExpandHorizontal|eAlignCenterVertical</alignment>
+						<element>
+							<object class="CGuiText" name="soundVolumeLabel">
+								<alignment>eAlignLeft|eAlignCenterVertical</alignment>
+								<string>Sound: </string>
+							</object>
+							<object class="CGuiHScale" name="sSoundVolume">
+								<alignment>eAlignExpandHorizontal|eAlignCenterVertical</alignment>
+								<minSize>120,20</minSize>
+							</object>
+							<object class="CGuiText" name="txtSoundVolume">
+								<alignment>eAlignRight|eAlignCenterVertical</alignment>
+								<minSize>40,0</minSize>
+								<string>100%</string>
 							</object>
 						</element>
 					</object>
