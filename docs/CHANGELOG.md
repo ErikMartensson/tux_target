@@ -33,6 +33,19 @@ Press **Escape** during gameplay to access the pause menu:
 - Camera perspective now calculates aspect ratio from actual screen dimensions
 - Main menu background, logo, and dartboard now scale correctly without stretching
 
+### Sound Effects (Fixed)
+All game sound effects now working:
+- **Countdown sounds** (0-5) - Play during session countdown
+- **Open sound** - Plays when transitioning to fly mode (wings open)
+- **Close sound** - Plays when transitioning to ball mode (wings close)
+- **Impact sound** - Plays when crashing while flying
+- **Splash sound** - Plays when entering water (client-side detection)
+
+Sound features:
+- **Distance-based volume** - Other players' sounds attenuate with distance
+- **User volume scaling** - All sounds respect the Sound Volume slider
+- **Local player priority** - Your own sounds always play at full volume
+
 ### HUD Speed Display
 - Added speedometer to bottom-right corner of HUD (above score)
 - Shows current speed as an integer value (scaled x100 for readability)
@@ -105,6 +118,9 @@ Press **Escape** during gameplay to access the pause menu:
 - `client/data/gui/options.xml` - Options menu layout
 - `client/data/gui/pause_menu.xml` - Pause menu layout
 - `client/src/options_menu.cpp/h` - Shared options menu class (used by intro and game tasks)
+- `data/sound/DFN/*.dfn` - Sound definition schemas for NeL sound system
+- `data/sound/soundbank/*.sound` - Sound sheet definitions (countdown, effects)
+- `data/sound/samplebank/sound/*.wav` - Audio sample files
 - `docs/CHANGELOG.md` - This file
 - `common/lua_compat.h` - Lua compatibility macros
 - `scripts/*.bat` - Build and run scripts
@@ -121,7 +137,8 @@ Press **Escape** during gameplay to access the pause menu:
 - `client/src/background_task.cpp` - Menu background scaling
 - `client/src/gui_button.cpp/h` - Right-click support
 - `client/src/gui_mouse_listener.cpp/h` - Right-click detection
-- `client/src/sound_manager.cpp/h` - Volume control methods
+- `client/src/sound_manager.cpp/h` - Volume control, sound playback, gain/relative mode
+- `client/src/entity.cpp/h` - Client-side water detection, distance-based sound volume
 
 ### Server Source
 - `server/src/physics.cpp` - Momentum preservation fix

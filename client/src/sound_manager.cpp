@@ -128,7 +128,12 @@ CSoundManager::CSoundManager()
 void CSoundManager::init()
 {
 
-//	CPath::addSearchPath("/home/xnovak5/c/sound_sources/data", true, false);
+	// Add search paths for sound data (DFN schemas, sound definitions)
+	// NOTE: Do NOT add data/sound directly - it contains WAV files that conflict with samplebank lookup
+	CPath::addSearchPath("data/sound/DFN", true, false);
+	CPath::addSearchPath("data/sound/DFN/basics", true, false);
+	CPath::addSearchPath("data/sound/soundbank", true, false);
+	CPath::addSearchPath("data/sound/samplebank", true, false);
 
 	/*
 	 * 1. Create the audio mixer object and init it.
@@ -136,11 +141,10 @@ void CSoundManager::init()
 	 */
 	AudioMixer = UAudioMixer::createAudioMixer();
 
-	// NOTE: Sample bank and packed sheets disabled - causes crashes with our sound files.
-	// The NeL sound bank system expects specific DFN formats that don't match our setup.
-	// Sound effects will use the music playback API as a workaround.
-	// AudioMixer->setSamplePath("data/sound/samplebank");
-	// AudioMixer->setPackedSheetOption("cache", true);
+	// Enable sample bank loading - WAV files are in data/sound/samplebank/base_samples/
+	AudioMixer->setSamplePath("data/sound/samplebank");
+	// Enable packed sheet generation - sound definitions will be cached
+	AudioMixer->setPackedSheetOption("data/sound", true);
 
 	UAudioMixer::TDriver driverType;
 	string driverName = CConfigFileTask::getInstance().configFile().getVar("SoundDriver").asString();

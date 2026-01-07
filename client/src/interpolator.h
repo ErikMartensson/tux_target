@@ -150,12 +150,13 @@ protected:
 
 	virtual CCrashEvent		crashEvent(double time);
 	virtual bool			openCloseEvent(double time) const;
+	virtual bool			onWaterEvent(double time) const;
 	virtual std::string		chatLine(double time) const;
 	virtual NLMISC::CVector	position(double time);
 	virtual NLMISC::CVector	speed(double time);
 	virtual NLMISC::CVector	direction(double time);
 	virtual void			autoAdjustLct();
-	
+
 	std::deque<CEntityInterpolatorKey> Keys;
 	double  StartTime;
 	double  ServerTime;
@@ -179,6 +180,7 @@ protected:
 	std::string     CurrentChatLine;
 	
 	bool LastOpenClose;
+	bool LastOnWater;
 	std::string LastChatLine;
 	CCrashEvent LastCrash;
 	CCrashEvent CurrentCrashEvent;
@@ -203,6 +205,7 @@ protected:
 
 	virtual CCrashEvent		crashEvent(double time);
 	virtual bool			openCloseEvent(double time) const;
+	virtual bool			onWaterEvent(double time) const;
 	virtual std::string		chatLine(double time) const;
 	virtual NLMISC::CVector position(double time);
 	virtual NLMISC::CVector speed(double time);

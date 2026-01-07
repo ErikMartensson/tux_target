@@ -129,6 +129,7 @@ CInterpolator::CInterpolator(double dt)
 	CurrentCrashEvent  = CCrashEvent(false,CVector::Null);
 
 	LastOpenClose = false;
+	LastOnWater = false;
 	LastChatLine = "";
 	LastCrash = CCrashEvent(false,CVector::Null);;
 	
@@ -249,7 +250,25 @@ void CInterpolator::update()
 	bool ocEvent = openCloseEvent(ServerTime);
 	CurrentOpenCloseEvent = ocEvent && (LastOpenClose!=ocEvent);
 	LastOpenClose=ocEvent;
-	
+
+	// Process water collision events
+	// Note: Call collisionWithWater BEFORE updating CurrentOnWater,
+	// because collisionWithWater() checks currentOnWater() state
+	bool owEvent = onWaterEvent(ServerTime);
+	if(owEvent && !LastOnWater)
+	{
+		if(Entity)
+			Entity->collisionWithWater(true);
+		CurrentOnWater = true;
+	}
+	else if(!owEvent && LastOnWater)
+	{
+		if(Entity)
+			Entity->collisionWithWater(false);
+		CurrentOnWater = false;
+	}
+	LastOnWater = owEvent;
+
 	CCrashEvent CrashEvent = crashEvent(ServerTime);
 	CurrentCrashEvent.Crash = CrashEvent.Crash && (LastCrash.Crash!=CrashEvent.Crash);
 	if(CurrentCrashEvent.Crash)
@@ -307,6 +326,12 @@ bool CInterpolator::openCloseEvent(double time) const
 {
 	CEntityInterpolatorKey key = Keys.back();
 	return key.value().OpenCloseEvent;
+}
+
+bool CInterpolator::onWaterEvent(double time) const
+{
+	CEntityInterpolatorKey key = Keys.back();
+	return key.value().OnWater;
 }
 
 CVector CInterpolator::position(double time)
@@ -403,6 +428,29 @@ bool CLinearInterpolator::openCloseEvent(double time) const
 		nextKeySet = true;
 	}
 	return CInterpolator::openCloseEvent(time);
+}
+
+bool CLinearInterpolator::onWaterEvent(double time) const
+{
+	double remainder = fmod(time,DT);
+	double lerpPos = remainder / DT;
+	deque<CEntityInterpolatorKey>::const_reverse_iterator it;
+	CEntityInterpolatorKey nextKey = Keys.back();
+	bool nextKeySet = false;
+	for(it=Keys.rbegin();it!=Keys.rend();it++)
+	{
+		CEntityInterpolatorKey key = *it;
+		if(key.serverTime()<time)
+		{
+			if(!nextKeySet)
+				break;
+
+			return key.value().OnWater;
+		}
+		nextKey = key;
+		nextKeySet = true;
+	}
+	return CInterpolator::onWaterEvent(time);
 }
 
 string CLinearInterpolator::chatLine(double time) const

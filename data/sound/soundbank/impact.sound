@@ -1,0 +1,15 @@
+<?xml version="1.0"?>
+<FORM Revision="1.0" State="modified">
+  <STRUCT>
+    <VSTRUCT DfnName="simple_sound.dfn" Name="SoundType">
+      <ATOM Name="Filename" Value="impact.wav"/>
+      <ATOM Name="MinDistance" Value="1.0"/>
+      <ATOM Name="MaxDistance" Value="500"/>
+    </VSTRUCT>
+  </STRUCT>
+  <STRUCT/>
+  <STRUCT/>
+  <STRUCT/>
+  <STRUCT/>
+  <LOG></LOG>
+</FORM>

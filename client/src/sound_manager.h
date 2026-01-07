@@ -95,6 +95,22 @@ struct EntitySource
 		return false;
 	}
 
+	void setGain(float gain)
+	{
+		if(source)
+			source->setGain(gain);
+		else if(lowLevelSource)
+			lowLevelSource->setGain(gain);
+	}
+
+	void setRelativeMode(bool relative)
+	{
+		if(source)
+			source->setSourceRelativeMode(relative);
+		else if(lowLevelSource)
+			lowLevelSource->setSourceRelativeMode(relative);
+	}
+
 	NLSOUND::USource *source;        // High-level source (NULL if using low-level)
 	NLSOUND::ISource *lowLevelSource; // Low-level source (NULL if using high-level)
 	bool start;
@@ -132,6 +148,7 @@ public:
 
 	void setMusicVolume(float volume);
 	void setSoundVolume(float volume);
+	float getSoundVolume() const { return SoundVolume; }
 
 	friend class NLMISC::CSingleton<CSoundManager>;
 	CSoundManager();

@@ -154,35 +154,7 @@ Despite boxes extending 0.5 units in Z (from Z to Z+0.5), they behave as distinc
 
 ## Low Priority / Nice to Have
 
-### 8. Sound Effects Not Working
-**Status:** In Progress
-**Description:** Sound effects (impacts, bounces, scoring sounds) are not playing. Background music works but game sound effects are silent.
-
-**Current State:**
-- Volume sliders work and control the sound subsystem
-- Background music plays correctly
-- Sound effect files exist in `data/sound/` directories
-- NeL sound system initializes without errors
-
-**Possible Causes:**
-- Missing or incorrect sound bank definitions (DFN files)
-- Sound event triggers not firing in game code
-- Sound sample format incompatibility with modern NeL
-
-**Related Files:**
-- `client/src/sound_manager.cpp/h` - Sound system wrapper
-- `data/sound/DFN/` - Sound definition files
-- `data/sound/samplebank/` - Raw audio samples
-- `data/sound/soundbank/` - Sound bank configurations
-
-**Work Done:**
-- Added `setMusicVolume()` and `setSoundVolume()` methods to CSoundManager
-- Volume controls in options menu work correctly
-- Sound directories populated with original game audio files
-
----
-
-### 9. /reset Command Broken
+### 8. /reset Command Broken
 **Status:** Not Started
 **Description:** The `/reset` command (Ctrl+F6) behaves identically to `/forceend` (Ctrl+F5) - it advances to the next level instead of restarting the current session.
 
@@ -263,6 +235,7 @@ Despite boxes extending 0.5 units in Z (from Z to Z+0.5), they behave as distinc
 - [x] **Add options to pause menu** (January 7, 2026) - Volume controls accessible mid-game without disconnecting
 - [x] **Fix disconnect/reconnect crashes** (January 7, 2026) - Proper cleanup of tasks, entities, and GUI on disconnect
 - [x] **Refactor options menu** (January 7, 2026) - Consolidated duplicate code into COptionsMenu class with callback interface
+- [x] **Fix sound effects** (January 7, 2026) - All game sounds working: countdown, open/close, impact, splash. Added distance-based volume for other players, user volume scaling, and client-side water collision detection
 
 ---
 

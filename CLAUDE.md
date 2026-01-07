@@ -50,6 +50,10 @@ tux_target/
 │   ├── level/                   # Level definitions (*.lua)
 │   ├── lua/                     # Server-side Lua scripts
 │   ├── shape/                   # 3D models
+│   ├── sound/                   # Sound effects and music
+│   │   ├── DFN/                 # NeL sound definition schemas
+│   │   ├── samplebank/sound/    # WAV audio files
+│   │   └── soundbank/           # Sound sheet definitions (.sound)
 │   ├── texture/                 # Textures
 │   └── ...
 │
@@ -122,6 +126,8 @@ LevelPlaylist = { };                   # Empty = normal rotation
 - `client/src/chat_task.cpp` - Chat toggle mode (Enter key)
 - `client/src/hud_task.cpp` - HUD rendering (speed display, altimeter, score)
 - `client/src/interpolator.cpp` - Client-side position smoothing
+- `client/src/sound_manager.cpp` - Sound effects and music playback
+- `client/src/entity.cpp` - Entity updates, sound triggers, water collision detection
 
 ### Lua Scripts
 - `data/lua/*_server.lua` - Server-side scoring logic per level

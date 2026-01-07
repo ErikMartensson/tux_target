@@ -183,6 +183,7 @@ private:
 
 	bool	Spectator;
 	bool    Ready;
+	bool    WasInWater;  // For client-side water collision detection
 
 	friend class CEntityManager;
 };

@@ -79,7 +79,48 @@ void CEntity::playSound(CSoundManager::TSound SoundID)
 
 	EntitySource *eSource = CSoundManager::getInstance().playSound(SoundID);
 	if (0!=eSource)
+	{
+		// Get user's sound volume setting
+		float userVolume = CSoundManager::getInstance().getSoundVolume();
+
+		if(isLocal())
+		{
+			// Local player sounds: play at full volume, relative to listener
+			eSource->setRelativeMode(true);
+			eSource->setGain(1.0f * userVolume);
+		}
+		else
+		{
+			// Other players: distance-based volume attenuation
+			// Get distance from camera (listener) to this entity
+			CVector myPos = interpolator().currentPosition();
+			CVector camPos = CMtpTarget::getInstance().controler().Camera.getMatrix()->getPos();
+			float distance = (myPos - camPos).norm();
+
+			// Distance-based falloff:
+			// - Full volume (0.5) at distance 0
+			// - Fades to near-zero at MaxDistance
+			// Using inverse distance falloff with a minimum threshold
+			const float MinDistance = 0.1f * GScale;   // ~1 meter in game units
+			const float MaxDistance = 5.0f * GScale;   // ~50 meters in game units
+			const float MaxGain = 0.5f;                // Max volume for other players
+
+			float gain;
+			if(distance <= MinDistance)
+				gain = MaxGain;
+			else if(distance >= MaxDistance)
+				gain = 0.05f;  // Minimum audible
+			else
+			{
+				// Linear falloff between min and max distance
+				float t = (distance - MinDistance) / (MaxDistance - MinDistance);
+				gain = MaxGain * (1.0f - t) + 0.05f * t;
+			}
+
+			eSource->setGain(gain * userVolume);
+		}
 		Channels.push_back(eSource);
+	}
 }
 
 CEntity::CEntity()
@@ -105,6 +146,7 @@ CEntity::CEntity()
 	FadeCloseParticleDuration = 1.0f;
 	FadeCloseParticleStartTime = 0.0f;
 	OriginalColor = CRGBA(255,255,255,255);
+	WasInWater = true;  // Start true to avoid spurious splash on connect
 }
 
 CEntity::~CEntity()
@@ -188,9 +230,22 @@ void CEntity::update()
 	CCrashEvent ce = interpolator().currentCrashEvent();
 	if(ce.Crash)
 	{
-		collideWhenFly(ce.Position);		
+		collideWhenFly(ce.Position);
 	}
-	
+
+	// Client-side water collision detection
+	// Water level is at 1.0f * GScale (see water_task.cpp)
+	const float WaterLevel = 1.0f * GScale;
+	CVector pos = interpolator().currentPosition();
+	bool isInWater = (pos.z < WaterLevel);
+
+	if(isInWater && !WasInWater)
+	{
+		// Just entered water - play splash sound
+		playSound(CSoundManager::Splash);
+		close();  // Switch to ball mode when entering water
+	}
+	WasInWater = isInWater;
 
 //	nlinfo("set matrix for %hu", (uint16)id());
 				
@@ -435,6 +490,7 @@ void CEntity::reset()
 	TotalScore = 0;
 	Ping = 0;
 	OpenClose = false;
+	WasInWater = true;  // Start true to avoid spurious splash before valid position data
 	ParticuleOpenActivated = 0;
 	ParticuleCloseActivated = 1;
 	ObjMatrix.identity();
@@ -461,6 +517,7 @@ void CEntity::sessionReset()
 	if(ReplayFile.empty())
 		interpolator().reset();
 	OpenClose = false;
+	WasInWater = true;  // Start true to avoid spurious splash before valid position data
 	if(!TraceParticleOpen.empty())
 		TraceParticleOpen.setUserColor(CRGBA(0,0,0,0));
 	if(!TraceParticleClose.empty())
