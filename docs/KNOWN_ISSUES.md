@@ -229,7 +229,28 @@ Despite boxes extending 0.5 units in Z (from Z to Z+0.5), they behave as distinc
 
 ---
 
-### 13. Version Compatibility
+### 13. Snow Particles Not Loading on Some Systems
+**Status:** Workaround Applied
+**Description:** The snow particle effect (`snow.ps`) fails to load on some systems, resulting in no snowflakes being rendered during gameplay.
+
+**Symptoms:**
+- No snowflake particles visible during gameplay
+- Previously caused crash when external camera activated (Alt+A or on landing) - now fixed
+
+**Possible Causes:**
+- Missing `snow.ps` particle system file
+- `DisplayParticle` config option set to 0
+- Graphics driver compatibility issues with particle systems
+
+**Workaround Applied:** Added null checks before accessing the particle system in external camera rendering (`client/src/3d_task.cpp`).
+
+**Files Affected:**
+- `client/src/3d_task.cpp:337-350` - LevelParticle.empty() checks added
+- `data/particle/snow.ps` - May be missing or incompatible
+
+---
+
+### 14. Version Compatibility
 **Status:** Ongoing
 **Description:** The current build uses v1.2.2a source code. Some features from v1.5.19 are not available.
 
@@ -259,6 +280,7 @@ Despite boxes extending 0.5 units in Z (from Z to Z+0.5), they behave as distinc
 - [x] **Fix disconnect/reconnect crashes** (January 7, 2026) - Proper cleanup of tasks, entities, and GUI on disconnect
 - [x] **Refactor options menu** (January 7, 2026) - Consolidated duplicate code into COptionsMenu class with callback interface
 - [x] **Fix sound effects** (January 7, 2026) - All game sounds working: countdown, open/close, impact, splash. Added distance-based volume for other players, user volume scaling, and client-side water collision detection
+- [x] **Fix external camera crash** (January 8, 2026) - Added null checks for LevelParticle before hide/show to prevent crash when snow particles aren't loaded
 
 ---
 
